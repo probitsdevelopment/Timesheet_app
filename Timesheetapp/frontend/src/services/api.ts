@@ -118,6 +118,19 @@ export const holidayService = {
   getAll: () => apiClient.get('/holidays'),
 };
 
+// Leave Service
+export const leaveService = {
+  getAll: () => apiClient.get('/leaves'),
+  getById: (id: string) => apiClient.get(`/leaves/${id}`),
+  getByUserId: (userId: string) => apiClient.get(`/leaves/user/${userId}`),
+  getPending: () => apiClient.get('/leaves/pending/all'),
+  create: (leave: any) => apiClient.post('/leaves', leave),
+  update: (id: string, leave: any) => apiClient.put(`/leaves/${id}`, leave),
+  delete: (id: string) => apiClient.delete(`/leaves/${id}`),
+  approve: (id: string) => apiClient.post(`/leaves/${id}/approve`, {}),
+  reject: (id: string, rejectionReason: string) => apiClient.post(`/leaves/${id}/reject`, { rejection_reason: rejectionReason }),
+};
+
 // User Service
 export const userService = {
   getAll: () => apiClient.get('/users'),

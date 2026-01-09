@@ -1,7 +1,8 @@
-import { CheckSquare, Clock, ThumbsUp, ThumbsDown, Calendar, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CheckSquare, Clock, ThumbsUp, ThumbsDown, Calendar, X, ChevronLeft, ChevronRight, AlertCircle, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog,
   DialogContent,
@@ -11,6 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
+import { useToast } from '@/hooks/use-toast';
 import {
   setTimesheets,
   setLoading,
@@ -18,12 +20,15 @@ import {
   approveTimesheet,
   rejectTimesheet,
 } from '@/store/reducers/timeSheetReducer';
-import { timesheetSubmissionService, timesheetService } from '@/services/api';
+import { timesheetSubmissionService, timesheetService, leaveService } from '@/services/api';
 
 const ApprovalsPage = () => {
   const dispatch = useAppDispatch();
+  const { toast } = useToast();
   const { currentUser } = useAppSelector((state) => state.auth);
   const { timesheets, isLoading } = useAppSelector((state) => state.timesheet);
+  
+  // Timesheet states
   const [isProcessing, setIsProcessing] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [selectedTimesheet, setSelectedTimesheet] = useState<any>(null);
@@ -32,6 +37,14 @@ const ApprovalsPage = () => {
   const [timesheetEntries, setTimesheetEntries] = useState<any[]>([]);
   const [loadingEntries, setLoadingEntries] = useState(false);
   const [viewCurrentMonth, setViewCurrentMonth] = useState<string>('');
+  
+  // Leave states
+  const [pendingLeaves, setPendingLeaves] = useState<any[]>([]);
+  const [leavesLoading, setLeavesLoading] = useState(false);
+  const [selectedLeave, setSelectedLeave] = useState<any>(null);
+  const [leaveRejectionDialogOpen, setLeaveRejectionDialogOpen] = useState(false);
+  const [leaveRejectionReason, setLeaveRejectionReason] = useState('');
+  const [leaveProcessing, setLeaveProcessing] = useState(false);
 
   // Fetch pending timesheets on component mount
   useEffect(() => {
@@ -60,6 +73,30 @@ const ApprovalsPage = () => {
 
     fetchPendingTimesheets();
   }, [dispatch, currentUser]);
+
+  // Fetch pending leaves on component mount
+  useEffect(() => {
+    const fetchPendingLeaves = async () => {
+      try {
+        setLeavesLoading(true);
+        console.log('📥 Fetching pending leaves for manager');
+        const data = await leaveService.getPending();
+        console.log('✅ Pending leaves found:', data?.length || 0, data);
+        setPendingLeaves(data || []);
+      } catch (error) {
+        console.error('❌ Error fetching leaves:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load pending leaves',
+          variant: 'destructive',
+        });
+      } finally {
+        setLeavesLoading(false);
+      }
+    };
+
+    fetchPendingLeaves();
+  }, [toast]);
 
   // Get days in month
   const getDaysInMonth = (dateString: string) => {
@@ -168,13 +205,82 @@ const ApprovalsPage = () => {
     }
   };
 
+  // Handle approve leave
+  const handleApproveLeave = async (leaveId: string) => {
+    try {
+      setLeaveProcessing(true);
+      await leaveService.approve(leaveId);
+      setPendingLeaves(pendingLeaves.filter(l => l.id !== leaveId));
+      toast({
+        title: 'Success',
+        description: 'Leave approved successfully',
+      });
+    } catch (error) {
+      console.error('Failed to approve leave:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to approve leave',
+        variant: 'destructive',
+      });
+    } finally {
+      setLeaveProcessing(false);
+    }
+  };
+
+  // Handle reject leave
+  const handleRejectLeave = async () => {
+    if (!selectedLeave || !leaveRejectionReason.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please provide a rejection reason',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setLeaveProcessing(true);
+      await leaveService.reject(selectedLeave.id, leaveRejectionReason);
+      setPendingLeaves(pendingLeaves.filter(l => l.id !== selectedLeave.id));
+      setLeaveRejectionDialogOpen(false);
+      setLeaveRejectionReason('');
+      setSelectedLeave(null);
+      toast({
+        title: 'Success',
+        description: 'Leave rejected successfully',
+      });
+    } catch (error) {
+      console.error('Failed to reject leave:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to reject leave',
+        variant: 'destructive',
+      });
+    } finally {
+      setLeaveProcessing(false);
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Approvals</h1>
-        <p className="text-muted-foreground">Review and approve time entries from your team</p>
+        <p className="text-muted-foreground">Review and approve timesheets and leave requests from your team</p>
       </div>
 
+      <Tabs defaultValue="timesheets" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="timesheets">
+            <Clock className="w-4 h-4 mr-2" />
+            Timesheets ({pendingTimesheets.length})
+          </TabsTrigger>
+          <TabsTrigger value="leaves">
+            <Calendar className="w-4 h-4 mr-2" />
+            Leaves ({pendingLeaves.length})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="timesheets" className="space-y-4">
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="border-0 shadow-md">
@@ -478,7 +584,86 @@ const ApprovalsPage = () => {
           )}
         </DialogContent>
       </Dialog>
-      {/* Rejection Dialog */}
+        </TabsContent>
+
+        {/* Leaves Tab */}
+        <TabsContent value="leaves" className="space-y-4">
+          <Card className="border-0 shadow-md">
+            <CardHeader>
+              <CardTitle>Pending Leave Requests</CardTitle>
+              <CardDescription>Review and approve leave requests from your team</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {leavesLoading ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin opacity-40" />
+                  <p>Loading leave requests...</p>
+                </div>
+              ) : pendingLeaves.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Calendar className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                  <p>No pending leave requests</p>
+                  <p className="text-sm">All caught up! Leave requests will appear here when submitted</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {pendingLeaves.map((leave) => (
+                    <div
+                      key={leave.id}
+                      className="p-4 border rounded-lg hover:bg-accent/5 transition-colors"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className="font-semibold text-foreground">{leave.user_name}</h4>
+                            <span className="text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-700">
+                              {leave.leave_type}
+                            </span>
+                            <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">
+                              {leave.number_of_days} day{leave.number_of_days !== 1 ? 's' : ''}
+                            </span>
+                          </div>
+                          <div className="flex gap-4 text-sm text-muted-foreground mb-2">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-4 h-4" />
+                              {new Date(leave.start_date).toLocaleDateString()} → {new Date(leave.end_date).toLocaleDateString()}
+                            </span>
+                          </div>
+                          {leave.reason && (
+                            <p className="text-sm text-muted-foreground italic">
+                              Reason: {leave.reason}
+                            </p>
+                          )}
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Requested by {leave.user_email} on {new Date(leave.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            size="sm"
+                            onClick={() => handleApproveLeave(leave.id)}
+                            disabled={leaveProcessing}
+                            className="gap-2 bg-green-600 hover:bg-green-700"
+                          >
+                            {leaveProcessing ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <ThumbsUp className="w-4 h-4" />
+                            )}
+                            Approve
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Timesheet Rejection Dialog */}
       <Dialog open={rejectionDialogOpen} onOpenChange={setRejectionDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -505,6 +690,54 @@ const ApprovalsPage = () => {
                 className="bg-red-600 hover:bg-red-700"
               >
                 Reject Timesheet
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Leave Rejection Dialog */}
+      <Dialog open={leaveRejectionDialogOpen} onOpenChange={setLeaveRejectionDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject Leave Request</DialogTitle>
+            <DialogDescription>
+              Provide a reason for rejecting this leave request
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {selectedLeave && (
+              <div className="p-3 bg-accent/5 rounded-lg">
+                <p className="text-sm font-medium">{selectedLeave.user_name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {new Date(selectedLeave.start_date).toLocaleDateString()} → {new Date(selectedLeave.end_date).toLocaleDateString()}
+                </p>
+              </div>
+            )}
+            <Textarea
+              placeholder="Enter rejection reason..."
+              value={leaveRejectionReason}
+              onChange={(e) => setLeaveRejectionReason(e.target.value)}
+              rows={4}
+              className="resize-none"
+            />
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setLeaveRejectionDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleRejectLeave}
+                disabled={leaveProcessing || !leaveRejectionReason.trim()}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                {leaveProcessing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Rejecting...
+                  </>
+                ) : (
+                  'Reject Leave'
+                )}
               </Button>
             </div>
           </div>

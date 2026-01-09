@@ -13,6 +13,7 @@ const usersRoutes = require('./routes/usersRoutes');
 const projectsRoutes = require('./routes/projectsRoutes');
 const timeEntriesRoutes = require('./routes/timeEntriesRoutes');
 const timesheetsRoutes = require('./routes/timesheetsRoutes');
+const leavesRoutes = require('./routes/leavesRoutes');
 
 // ==================== GLOBAL MIDDLEWARE ====================
 
@@ -50,6 +51,9 @@ app.use('/time-entries', timeEntriesRoutes);
 
 // Timesheets routes
 app.use('/timesheets', timesheetsRoutes);
+
+// Leaves routes
+app.use('/leaves', leavesRoutes);
 
 // Legacy route support for /my-time-entries
 const { getUserTimeEntries } = require('./controllers/timeEntriesController');

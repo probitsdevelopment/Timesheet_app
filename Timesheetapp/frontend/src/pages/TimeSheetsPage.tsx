@@ -1,4 +1,4 @@
-import { Clock, Plus, Trash2, Send, Calendar, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
+import { Clock, Plus, Trash2, Send, Calendar, ChevronLeft, ChevronRight, AlertCircle, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
+import { useToast } from '@/hooks/use-toast';
 import {
   toggleAddEntryModal,
   deleteEntry,
@@ -20,17 +21,21 @@ import {
   submitTimesheet,
 } from '@/store/reducers/timeSheetReducer';
 import AddEntryModal from '@/components/AddEntryModal';
-import { timesheetService, timesheetSubmissionService } from '@/services/api';
+import { timesheetService, timesheetSubmissionService, leaveService } from '@/services/api';
 
 const TimeSheetsPage = () => {
   const dispatch = useAppDispatch();
+  const { toast } = useToast();
   const { currentUser } = useAppSelector((state) => state.auth);
   const { entries, timesheets, selectedMonth } = useAppSelector((state) => state.timesheet);
   const [currentMonth, setCurrentMonth] = useState(selectedMonth || new Date().toISOString().slice(0, 7));
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmittingLeave, setIsSubmittingLeave] = useState(false);
   const [selectedDateLocal, setSelectedDateLocal] = useState<string | null>(null);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [leaveForm, setLeaveForm] = useState({ leaveType: '', startDate: '', endDate: '', reason: '' });
+  const [approvedLeaves, setApprovedLeaves] = useState<any[]>([]);
+  const [leavesLoading, setLeavesLoading] = useState(false);
 
   // Get days in month
   const getDaysInMonth = (dateString: string) => {
@@ -67,6 +72,20 @@ const TimeSheetsPage = () => {
             }
           } catch (tsError) {
             console.log('ℹ️ No timesheets found yet (this is normal for new users)');
+          }
+
+          // Fetch approved leaves
+          try {
+            setLeavesLoading(true);
+            const leavesData = await leaveService.getAll();
+            const approved = leavesData?.filter((leave: any) => leave.status === 'approved') || [];
+            console.log('✅ Fetched approved leaves:', approved);
+            setApprovedLeaves(approved);
+          } catch (leavesError) {
+            console.log('ℹ️ Could not fetch leaves');
+            setApprovedLeaves([]);
+          } finally {
+            setLeavesLoading(false);
           }
         }
       } catch (error) {
@@ -243,10 +262,20 @@ const TimeSheetsPage = () => {
                 const dayHours = Math.round(dayEntries.reduce((sum, e) => sum + parseFloat(e.hours?.toString() || '0'), 0) * 10) / 10;
                 const isSelected = selectedDateLocal === dateStr;
 
+                // Check if this date has approved leave
+                const isLeaveTaken = approvedLeaves.some((leave) => {
+                  const startDate = leave.start_date.split('T')[0];
+                  const endDate = leave.end_date.split('T')[0];
+                  return dateStr >= startDate && dateStr <= endDate;
+                });
+
                 return (
                   <button
                     key={day}
                     onClick={() => {
+                      // Don't allow adding entries on leave days
+                      if (isLeaveTaken) return;
+                      
                       const newSelected = isSelected ? null : dateStr;
                       setSelectedDateLocal(newSelected);
                       dispatch(setSelectedDate(newSelected));
@@ -255,7 +284,9 @@ const TimeSheetsPage = () => {
                       }
                     }}
                     className={`aspect-square p-2 rounded-lg border-2 transition-colors flex flex-col items-center justify-center cursor-pointer ${
-                      isSelected
+                      isLeaveTaken
+                        ? 'border-blue-500 bg-blue-100 hover:bg-blue-200 cursor-not-allowed'
+                        : isSelected
                         ? 'border-primary bg-primary/10'
                         : dayEntries.length > 0
                         ? 'border-blue-200 bg-blue-50 hover:bg-blue-100'
@@ -263,7 +294,10 @@ const TimeSheetsPage = () => {
                     }`}
                   >
                     <div className="font-semibold text-sm">{day}</div>
-                    {dayHours > 0 && (
+                    {isLeaveTaken && (
+                      <div className="text-xs text-blue-600 font-medium">Leave</div>
+                    )}
+                    {!isLeaveTaken && dayHours > 0 && (
                       <div className="text-xs text-blue-600 font-medium">{dayHours}h</div>
                     )}
                   </button>
@@ -322,7 +356,7 @@ const TimeSheetsPage = () => {
           <DialogHeader>
             <DialogTitle>Apply for Leave</DialogTitle>
             <DialogDescription>
-              Request leave from your manager. This feature is coming soon.
+              Submit a leave request to your manager for approval.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -384,19 +418,55 @@ const TimeSheetsPage = () => {
               Cancel
             </Button>
             <Button
-              onClick={() => {
-                alert('Leave request feature coming soon! 🚀\n\nYour request would be:\n' + 
-                      `Type: ${leaveForm.leaveType || 'Not selected'}\n` +
-                      `From: ${leaveForm.startDate || 'Not selected'}\n` +
-                      `To: ${leaveForm.endDate || 'Not selected'}\n` +
-                      `Reason: ${leaveForm.reason || 'Not provided'}`);
-                setShowLeaveModal(false);
-                setLeaveForm({ leaveType: '', startDate: '', endDate: '', reason: '' });
+              onClick={async () => {
+                try {
+                  setIsSubmittingLeave(true);
+                  
+                  if (new Date(leaveForm.startDate) > new Date(leaveForm.endDate)) {
+                    toast({
+                      title: 'Invalid Dates',
+                      description: 'Start date must be before end date',
+                      variant: 'destructive',
+                    });
+                    return;
+                  }
+
+                  const response = await leaveService.create({
+                    leave_type: leaveForm.leaveType,
+                    start_date: leaveForm.startDate,
+                    end_date: leaveForm.endDate,
+                    reason: leaveForm.reason,
+                  });
+
+                  toast({
+                    title: 'Success',
+                    description: `Leave request submitted successfully! Days: ${Math.ceil((new Date(leaveForm.endDate).getTime() - new Date(leaveForm.startDate).getTime()) / (1000 * 3600 * 24)) + 1}`,
+                  });
+
+                  setShowLeaveModal(false);
+                  setLeaveForm({ leaveType: '', startDate: '', endDate: '', reason: '' });
+                } catch (error) {
+                  console.error('❌ Error submitting leave:', error);
+                  toast({
+                    title: 'Error',
+                    description: 'Failed to submit leave request. Please try again.',
+                    variant: 'destructive',
+                  });
+                } finally {
+                  setIsSubmittingLeave(false);
+                }
               }}
               className="bg-purple-600 hover:bg-purple-700"
-              disabled={!leaveForm.leaveType || !leaveForm.startDate || !leaveForm.endDate}
+              disabled={!leaveForm.leaveType || !leaveForm.startDate || !leaveForm.endDate || isSubmittingLeave}
             >
-              Submit Request
+              {isSubmittingLeave ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                'Submit Request'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
