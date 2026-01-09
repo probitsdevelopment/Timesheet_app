@@ -1,0 +1,425 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "username": "testuser",
+      "email": "testuser@gmail.com",
+      "password": "$2b$10$nUFNDoBpGWpBKtQbypVfWurkdCjxSAD1Devk6IsmvjO.7DU1t2wpi",
+      "role": "employee",
+      "createdAt": "2026-01-06T05:06:16.024Z"
+    },
+    {
+      "id": 2,
+      "username": "naveen",
+      "email": "naveen@probits.in",
+      "password": "$2b$10$0Ttx9ZAgVbqSheoJeKnT0OFMHawXWG6hoXug/QA7.bUhFdcs2EaDG",
+      "role": "employee",
+      "createdAt": "2026-01-06T06:42:36.482Z"
+    },
+    {
+      "username": "bindu",
+      "email": "bindu.j@probits.in",
+      "password": "bindu",
+      "role": "manager",
+      "managerId": null,
+      "createdAt": "2026-01-06T06:47:19.985Z",
+      "updatedAt": "2026-01-06T06:47:19.985Z",
+      "id": 3
+    },
+    {
+      "username": "jeevan",
+      "email": "jeevan.m@probits.in",
+      "password": "jeevan",
+      "role": "manager",
+      "managerId": 3,
+      "createdAt": "2026-01-06T06:53:11.746Z",
+      "updatedAt": "2026-01-06T06:53:11.746Z",
+      "id": 4
+    }
+  ],
+  "projects": [
+    {
+      "id": "99",
+      "name": "Website Redesign 2025",
+      "code": "WEB-001",
+      "description": "Complete redesign of company website with modern UI/UX and responsive design",
+      "status": "active",
+      "startDate": "2025-01-01",
+      "endDate": "2025-03-31",
+      "createdBy": "3",
+      "createdAt": "2024-12-01T10:00:00Z"
+    },
+    {
+      "id": "2",
+      "name": "Mobile App Development",
+      "code": "MOB-001",
+      "description": "Development of iOS and Android mobile application for time tracking and project management",
+      "status": "active",
+      "startDate": "2025-01-15",
+      "endDate": "2025-06-30",
+      "createdBy": "3",
+      "createdAt": "2024-11-10T10:00:00Z"
+    },
+    {
+      "id": "3",
+      "name": "Database Migration",
+      "code": "DB-001",
+      "description": "Migrate legacy database to PostgreSQL with zero downtime strategy",
+      "status": "planning",
+      "startDate": "2025-02-01",
+      "endDate": "2025-04-30",
+      "createdBy": "3",
+      "createdAt": "2024-12-15T10:00:00Z"
+    },
+    {
+      "id": "4",
+      "name": "API Development",
+      "code": "API-001",
+      "description": "Build RESTful APIs for internal and external integrations",
+      "status": "active",
+      "startDate": "2024-12-01",
+      "endDate": "2025-02-28",
+      "createdBy": "3",
+      "createdAt": "2024-11-20T10:00:00Z"
+    },
+    {
+      "id": "5",
+      "name": "Security Audit",
+      "code": "SEC-001",
+      "description": "Comprehensive security audit and vulnerability assessment",
+      "status": "planning",
+      "startDate": "2025-03-01",
+      "endDate": "2025-03-31",
+      "createdBy": "5",
+      "createdAt": "2024-12-20T10:00:00Z"
+    },
+    {
+      "id": "fc07",
+      "name": "json",
+      "code": "010",
+      "startDate": "2026-01-01T13:24:22.386Z",
+      "createdBy": "815fdde7-a0a2-42ae-b4a5-12f78c1d76e3",
+      "status": "active"
+    }
+  ],
+  "timeEntries": [
+    {
+      "id": "1",
+      "userId": "1",
+      "projectId": "1",
+      "projectName": "Website Redesign 2025",
+      "date": "2025-01-01",
+      "reason": "project-work",
+      "description": "Frontend development - Header and Navigation components",
+      "hours": 8,
+      "createdAt": "2025-01-01T10:00:00Z"
+    },
+    {
+      "id": "2",
+      "userId": "1",
+      "projectId": "1",
+      "projectName": "Website Redesign 2025",
+      "date": "2025-01-02",
+      "reason": "project-work",
+      "description": "CSS styling and responsive design for mobile view",
+      "hours": 7.5,
+      "createdAt": "2025-01-02T10:00:00Z"
+    },
+    {
+      "id": "3",
+      "userId": "1",
+      "projectId": "1",
+      "projectName": "Website Redesign 2025",
+      "date": "2025-01-03",
+      "reason": "project-work",
+      "description": "Homepage layout implementation and animations",
+      "hours": 8,
+      "createdAt": "2025-01-03T10:00:00Z"
+    },
+    {
+      "id": "4",
+      "userId": "1",
+      "projectId": "2",
+      "projectName": "Mobile App Development",
+      "date": "2024-12-31",
+      "reason": "meeting",
+      "description": "Mobile app project kickoff meeting with stakeholders",
+      "hours": 2,
+      "createdAt": "2024-12-31T10:00:00Z"
+    },
+    {
+      "id": "5",
+      "userId": "1",
+      "projectId": "4",
+      "projectName": "API Development",
+      "date": "2024-12-30",
+      "reason": "training",
+      "description": "React best practices and hooks deep dive training",
+      "hours": 3,
+      "createdAt": "2024-12-30T10:00:00Z"
+    },
+    {
+      "id": "6",
+      "userId": "1",
+      "projectId": "3",
+      "projectName": "Database Migration",
+      "date": "2024-12-29",
+      "reason": "support",
+      "description": "Supporting legacy system migration planning meeting",
+      "hours": 4,
+      "createdAt": "2024-12-29T10:00:00Z"
+    },
+    {
+      "id": "1767342411708",
+      "date": "2026-01-02",
+      "reason": "project-work",
+      "description": "testing the db",
+      "hours": 9,
+      "projectId": "fc07",
+      "projectName": "json",
+      "createdAt": "2026-01-02T08:26:51.708Z",
+      "userId": "1f54"
+    },
+    {
+      "id": 1767342411709,
+      "date": "2026-01-06",
+      "reason": "meeting",
+      "description": "testing naveen",
+      "hours": 1,
+      "projectId": "3",
+      "projectName": "Database Migration",
+      "createdAt": "2026-01-06T06:48:06.494Z",
+      "userId": 2
+    }
+  ],
+  "holidays": [
+    {
+      "id": "1",
+      "holidayDate": "2025-01-26",
+      "name": "Republic Day",
+      "description": "National holiday",
+      "createdAt": "2024-12-01T10:00:00Z"
+    },
+    {
+      "id": "2",
+      "holidayDate": "2025-03-08",
+      "name": "Maha Shivaratri",
+      "description": "National holiday",
+      "createdAt": "2024-12-01T10:00:00Z"
+    },
+    {
+      "id": "3",
+      "holidayDate": "2025-03-25",
+      "name": "Holi",
+      "description": "National holiday",
+      "createdAt": "2024-12-01T10:00:00Z"
+    },
+    {
+      "id": "4",
+      "holidayDate": "2025-04-17",
+      "name": "Ram Navami",
+      "description": "National holiday",
+      "createdAt": "2024-12-01T10:00:00Z"
+    },
+    {
+      "id": "5",
+      "holidayDate": "2025-01-06",
+      "name": "Company Foundation Day",
+      "description": "Company holiday",
+      "createdAt": "2024-12-01T10:00:00Z"
+    }
+  ],
+  "approvals": [
+    {
+      "id": "1",
+      "timeEntryId": "1",
+      "managerId": "3",
+      "status": "pending",
+      "comments": "Awaiting manager review and approval",
+      "createdAt": "2025-01-01T10:00:00Z",
+      "updatedAt": "2025-01-01T10:00:00Z"
+    },
+    {
+      "id": "2",
+      "timeEntryId": "2",
+      "managerId": "3",
+      "status": "pending",
+      "comments": "Under review",
+      "createdAt": "2025-01-02T10:00:00Z",
+      "updatedAt": "2025-01-02T10:00:00Z"
+    },
+    {
+      "id": "3",
+      "timeEntryId": "4",
+      "managerId": "3",
+      "status": "approved",
+      "comments": "Approved - Good meeting outcome documented",
+      "createdAt": "2024-12-31T10:00:00Z",
+      "updatedAt": "2024-12-31T14:30:00Z"
+    },
+    {
+      "id": "4",
+      "timeEntryId": "5",
+      "managerId": "3",
+      "status": "approved",
+      "comments": "Approved - Important training session",
+      "createdAt": "2024-12-30T10:00:00Z",
+      "updatedAt": "2024-12-30T15:45:00Z"
+    },
+    {
+      "id": "5",
+      "timeEntryId": null,
+      "managerId": "3",
+      "status": "pending",
+      "comments": "Under review",
+      "createdAt": "2025-01-01T10:00:00Z",
+      "updatedAt": "2025-01-01T10:00:00Z"
+    },
+    {
+      "id": "6",
+      "timeEntryId": null,
+      "managerId": "3",
+      "status": "approved",
+      "comments": "Approved - Thorough testing completed",
+      "createdAt": "2025-01-01T10:00:00Z",
+      "updatedAt": "2025-01-01T13:20:00Z"
+    }
+  ],
+  "timesheets": [
+    {
+      "id": "ts-1735746000000",
+      "userId": "1",
+      "month": "2025-12",
+      "year": 2025,
+      "totalHours": 160,
+      "entries": [],
+      "status": "draft",
+      "submittedAt": null,
+      "submittedTo": "3",
+      "approvedAt": null,
+      "approvedBy": null,
+      "rejectionReason": null,
+      "createdAt": "2025-12-01T10:00:00Z",
+      "updatedAt": "2025-12-01T10:00:00Z"
+    },
+    {
+      "id": "ts-1735746000001",
+      "userId": "2",
+      "month": "2025-12",
+      "year": 2025,
+      "totalHours": 160,
+      "entries": [],
+      "status": "submitted",
+      "submittedAt": "2025-12-28T15:30:00Z",
+      "submittedTo": "3",
+      "approvedAt": null,
+      "approvedBy": null,
+      "rejectionReason": null,
+      "createdAt": "2025-12-01T10:00:00Z",
+      "updatedAt": "2025-12-28T15:30:00Z"
+    },
+    {
+      "id": "ts-1735746000002",
+      "userId": "4",
+      "month": "2025-11",
+      "year": 2025,
+      "totalHours": 155,
+      "entries": [],
+      "status": "approved",
+      "submittedAt": "2025-11-28T14:00:00Z",
+      "submittedTo": "3",
+      "approvedAt": "2025-11-29T10:00:00Z",
+      "approvedBy": "3",
+      "rejectionReason": null,
+      "createdAt": "2025-11-01T10:00:00Z",
+      "updatedAt": "2025-11-29T10:00:00Z"
+    },
+    {
+      "id": "ts-1767342438475",
+      "userId": "1f54",
+      "month": "2026-01",
+      "year": 2026,
+      "totalHours": 9,
+      "entries": [
+        {
+          "id": "1767342411708",
+          "date": "2026-01-02",
+          "reason": "project-work",
+          "description": "testing the db",
+          "hours": 9,
+          "projectId": "fc07",
+          "projectName": "json",
+          "createdAt": "2026-01-02T08:26:51.708Z",
+          "userId": "1f54"
+        }
+      ],
+      "status": "submitted",
+      "submittedAt": "2026-01-02T08:27:18.475Z",
+      "submittedTo": "admin",
+      "createdAt": "2026-01-02T08:27:18.475Z",
+      "updatedAt": "2026-01-02T08:27:18.475Z"
+    },
+    {
+      "id": null,
+      "userId": 2,
+      "month": "2026-01",
+      "year": 2026,
+      "totalHours": 10,
+      "entries": [
+        {
+          "id": "1767342411708",
+          "date": "2026-01-02",
+          "reason": "project-work",
+          "description": "testing the db",
+          "hours": 9,
+          "projectId": "fc07",
+          "projectName": "json",
+          "createdAt": "2026-01-02T08:26:51.708Z",
+          "userId": "1f54"
+        },
+        {
+          "id": 1767342411709,
+          "date": "2026-01-06",
+          "reason": "meeting",
+          "description": "testing naveen",
+          "hours": 1,
+          "projectId": "3",
+          "projectName": "Database Migration",
+          "createdAt": "2026-01-06T06:48:06.494Z",
+          "userId": 2
+        }
+      ],
+      "status": "submitted",
+      "submittedAt": "2026-01-06T06:53:49.396Z",
+      "submittedTo": "admin",
+      "createdAt": "2026-01-06T06:53:49.396Z",
+      "updatedAt": "2026-01-06T06:53:49.396Z"
+    }
+  ],
+  "login": [
+    {
+      "emailOrUsername": "jasmin",
+      "password": "jasmin@123",
+      "id": 1
+    },
+    {
+      "emailOrUsername": "usertwo",
+      "password": "usertwo@123",
+      "id": 2
+    }
+  ],
+  "register": [
+    {
+      "username": "usertwo",
+      "email": "usertwo@gmail.com",
+      "password": "usertwo@123",
+      "id": 1
+    },
+    {
+      "username": "userthree",
+      "email": "userthree@gmail.com",
+      "password": "userthree@123",
+      "id": 2
+    }
+  ]
+}

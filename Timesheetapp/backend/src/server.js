@@ -1,0 +1,78 @@
+const express = require('express');
+require('dotenv').config();
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+// Import middleware
+const { corsConfig, securityHeaders } = require('./middleware/securityMiddleware');
+
+// Import routes
+const authRoutes = require('./routes/authRoutes');
+const usersRoutes = require('./routes/usersRoutes');
+const projectsRoutes = require('./routes/projectsRoutes');
+const timeEntriesRoutes = require('./routes/timeEntriesRoutes');
+const timesheetsRoutes = require('./routes/timesheetsRoutes');
+
+// ==================== GLOBAL MIDDLEWARE ====================
+
+// CORS
+app.use(require('cors')(corsConfig));
+
+// Body parsers
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+// Security headers
+app.use(securityHeaders);
+
+// ==================== HEALTH CHECK ====================
+
+app.get('/', (req, res) => {
+  res.json({ message: "Express server is running", port: PORT });
+});
+
+// ==================== API ROUTES ====================
+
+// Authentication routes (no /api prefix for backward compatibility)
+app.post('/register', require('./middleware/securityMiddleware').registerLimiter, require('./controllers/authController').register);
+app.post('/login', require('./middleware/securityMiddleware').loginLimiter, require('./controllers/authController').login);
+app.get('/me', require('./middleware/authMiddleware').verifyToken, require('./controllers/authController').getCurrentUser);
+
+// Users routes
+app.use('/users', usersRoutes);
+
+// Projects routes
+app.use('/projects', projectsRoutes);
+
+// Time entries routes
+app.use('/time-entries', timeEntriesRoutes);
+
+// Timesheets routes
+app.use('/timesheets', timesheetsRoutes);
+
+// Legacy route support for /my-time-entries
+const { getUserTimeEntries } = require('./controllers/timeEntriesController');
+const { verifyToken } = require('./middleware/authMiddleware');
+app.get('/my-time-entries', verifyToken, getUserTimeEntries);
+
+// ==================== ERROR HANDLING ====================
+
+app.use((req, res) => {
+  res.status(404).json({ error: "Route not found" });
+});
+
+app.use((err, req, res, next) => {
+  console.error('❌ Unhandled error:', err);
+  res.status(500).json({ error: "Internal server error" });
+});
+
+// ==================== SERVER START ====================
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`\n✅ Express server running on http://localhost:${PORT}`);
+  console.log(`🗄️  PostgreSQL configured`);
+  console.log(`🔒 JWT Secret configured: ${process.env.JWT_SECRET ? "YES" : "NO"}\n`);
+});
+
+module.exports = app;
