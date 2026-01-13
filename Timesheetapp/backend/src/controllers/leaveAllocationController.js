@@ -130,8 +130,89 @@ const updateAllocation = async (req, res) => {
   }
 };
 
+// Bulk allocate leave days to all organization users (admin only)
+const bulkAllocateLeaves = async (req, res) => {
+  try {
+    const { leaveType, allocatedDays, year } = req.body;
+    const adminUserId = req.user?.userId;
+
+    if (!leaveType || allocatedDays === undefined) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    if (!adminUserId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    console.log(`🎁 Bulk allocating: ${leaveType}, ${allocatedDays} days for year ${year}`);
+
+    // Get admin's organization
+    const adminOrgResult = await db.query(
+      `SELECT organization FROM users WHERE id = $1`,
+      [adminUserId]
+    );
+
+    if (adminOrgResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Admin user not found' });
+    }
+
+    const organization = adminOrgResult.rows[0].organization;
+    const currentYear = year || new Date().getFullYear();
+
+    console.log(`📋 Allocating to organization: ${organization}`);
+
+    // Get all active users in the organization (except admins)
+    const usersResult = await db.query(
+      `SELECT id FROM users 
+       WHERE organization = $1 AND role != 'admin'`,
+      [organization]
+    );
+
+    if (usersResult.rows.length === 0) {
+      return res.json({
+        message: 'No eligible users found for allocation',
+        allocatedCount: 0,
+      });
+    }
+
+    const userIds = usersResult.rows.map(u => u.id);
+    console.log(`👥 Found ${userIds.length} eligible users`);
+
+    // Bulk insert or update leave allocations
+    let allocatedCount = 0;
+    for (const userId of userIds) {
+      const result = await db.query(
+        `INSERT INTO leave_allocation (user_id, leave_type, allocated_days, year)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (user_id, leave_type, year) 
+         DO UPDATE SET allocated_days = $3, updated_at = CURRENT_TIMESTAMP
+         RETURNING id`,
+        [userId, leaveType, allocatedDays, currentYear]
+      );
+      if (result.rows.length > 0) {
+        allocatedCount++;
+      }
+    }
+
+    console.log(`✅ Bulk allocation complete: ${allocatedCount} users updated`);
+
+    res.json({
+      message: 'Leaves allocated to all users',
+      leaveType,
+      allocatedDays,
+      year: currentYear,
+      allocatedCount,
+      totalUsers: userIds.length,
+    });
+  } catch (error) {
+    console.error('❌ Error in bulk allocation:', error);
+    res.status(500).json({ error: 'Failed to allocate leaves' });
+  }
+};
+
 module.exports = {
   getLeaveBalance,
   getAllAllocations,
   updateAllocation,
+  bulkAllocateLeaves,
 };

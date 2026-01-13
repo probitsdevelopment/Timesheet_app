@@ -47,9 +47,12 @@ import { format } from 'date-fns';
 const UsersPage = () => {
   const dispatch = useAppDispatch();
   const { toast } = useToast();
+  const { currentUser } = useAppSelector((state) => state.auth);
   
   // Use Redux state
   const { users, isLoading } = useAppSelector((state) => state.users);
+
+  const isAdmin = currentUser?.role === 'admin';
 
   const [isOpen, setIsOpen] = useState(false);
   const [isManagerDialogOpen, setIsManagerDialogOpen] = useState(false);
@@ -241,10 +244,11 @@ const UsersPage = () => {
           <h1 className="text-2xl font-bold text-foreground">Users</h1>
           <p className="text-muted-foreground">Manage team members and their roles</p>
         </div>
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="w-4 h-4" />
+        {isAdmin && (
+          <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2">
+                <Plus className="w-4 h-4" />
               Create User
             </Button>
           </DialogTrigger>
@@ -345,6 +349,7 @@ const UsersPage = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        )}
       </div>
 
       {/* Stats */}

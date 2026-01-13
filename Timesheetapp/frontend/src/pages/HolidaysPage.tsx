@@ -1,4 +1,4 @@
-import { Calendar, Plus, PartyPopper, Trash2 } from 'lucide-react';
+import { Calendar, Plus, PartyPopper, Trash2, Gift } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAppSelector } from '@/store/hooks';
 import { useToast } from '@/hooks/use-toast';
-import { holidayService } from '@/services/api';
+import { holidayService, apiClient } from '@/services/api';
 
 const HolidaysPage = () => {
   const { toast } = useToast();
@@ -18,6 +18,14 @@ const HolidaysPage = () => {
   const [formData, setFormData] = useState({ date: '', title: '', type: 'holiday' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Bulk leave allocation states
+  const [leaveType, setLeaveType] = useState<string>('Casual');
+  const [allocatedDays, setAllocatedDays] = useState<string>('');
+  const [year, setYear] = useState<string>(new Date().getFullYear().toString());
+  const [isAllocating, setIsAllocating] = useState(false);
+
+  const leaveTypes = ['Casual', 'Sick', 'Earned', 'Maternity', 'Paternity', 'Personal', 'Special'];
 
   // Fetch holidays on component mount
   useEffect(() => {
@@ -125,6 +133,48 @@ const HolidaysPage = () => {
     }
   };
 
+  // Handle bulk leave allocation for all org users
+  const handleBulkAllocateLeaves = async () => {
+    if (!allocatedDays.trim() || parseInt(allocatedDays) <= 0) {
+      toast({
+        title: 'Error',
+        description: 'Please enter valid number of days',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setIsAllocating(true);
+      console.log(`Bulk allocating ${leaveType} leaves: ${allocatedDays} days for year ${year}`);
+      
+      const response = await apiClient.post('/leave-allocation/bulk', {
+        leaveType,
+        allocatedDays: parseInt(allocatedDays),
+        year: parseInt(year),
+      });
+
+      console.log('Bulk allocation response:', response);
+      toast({
+        title: 'Success',
+        description: `${leaveType} leaves allocated to all users`,
+      });
+      
+      // Reset form
+      setAllocatedDays('');
+      setLeaveType('Casual');
+    } catch (error: any) {
+      console.error('Error allocating leaves:', error);
+      toast({
+        title: 'Error',
+        description: error?.message || 'Failed to allocate leaves',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsAllocating(false);
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
@@ -184,6 +234,71 @@ const HolidaysPage = () => {
                 <Plus className="w-4 h-4 mr-2" />
                 SAVE
               </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Bulk Leave Allocation Form - Admin Only */}
+      {isAdmin && (
+        <Card className="border-0 shadow-md bg-gradient-to-br from-green-50 to-emerald-50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Gift className="w-5 h-5 text-green-600" />
+              Bulk Leave Allocation
+            </CardTitle>
+            <CardDescription>Allocate leave days to all organization employees</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="leave-type">Leave Type</Label>
+                  <Select value={leaveType} onValueChange={setLeaveType}>
+                    <SelectTrigger id="leave-type">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {leaveTypes.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="days">Number of Days</Label>
+                  <Input
+                    id="days"
+                    type="number"
+                    placeholder="e.g., 5"
+                    value={allocatedDays}
+                    onChange={(e) => setAllocatedDays(e.target.value)}
+                    min="1"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="year">Year</Label>
+                  <Input
+                    id="year"
+                    type="number"
+                    value={year}
+                    onChange={(e) => setYear(e.target.value)}
+                    min="2024"
+                  />
+                </div>
+                <div className="flex items-end">
+                  <Button
+                    onClick={handleBulkAllocateLeaves}
+                    disabled={isAllocating || !allocatedDays.trim()}
+                    className="w-full bg-green-600 hover:bg-green-700"
+                  >
+                    <Gift className="w-4 h-4 mr-2" />
+                    {isAllocating ? 'Allocating...' : 'Allocate'}
+                  </Button>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

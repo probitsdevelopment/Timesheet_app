@@ -39,7 +39,8 @@ export const registerAsync = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      console.log('📝 Registering via API...', { name, email, organization });      console.log('🔐 Password value:', password, 'Length:', password?.length);      
+      console.log('📝 Registering via API...', { name, email, organization });
+      
       // Call backend /register endpoint
       // Backend hashes password with bcrypt and stores in database
       const response = await authService.register(name, email, password, organization);

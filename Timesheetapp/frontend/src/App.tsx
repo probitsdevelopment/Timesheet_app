@@ -2,7 +2,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { useAppSelector } from "@/store/hooks";
 import AuthPage from "./pages/AuthPage";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import TimeSheetsPage from "./pages/TimeSheetsPage";
@@ -12,7 +13,21 @@ import ApprovalsPage from "./pages/ApprovalsPage";
 import SalaryPage from "./pages/SalaryPage";
 import HolidaysPage from "./pages/HolidaysPage";
 import NotFound from "./pages/NotFound";
+
 const queryClient = new QueryClient();
+
+// Protected Route for role-based access
+const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode; allowedRoles: string[] }) => {
+  const { currentUser } = useAppSelector((state) => state.auth);
+  const navigate = useNavigate();
+
+  if (!currentUser || !allowedRoles.includes(currentUser.role)) {
+    setTimeout(() => navigate("/dashboard/timesheets"), 0);
+    return null;
+  }
+
+  return <>{children}</>;
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -28,7 +43,7 @@ const App = () => (
             <Route path="timesheets" element={<TimeSheetsPage />} />
             <Route path="projects" element={<ProjectsPage />} />
             <Route path="users" element={<UsersPage />} />
-            <Route path="approvals" element={<ApprovalsPage />} />
+            <Route path="approvals" element={<ProtectedRoute allowedRoles={['admin', 'manager']}><ApprovalsPage /></ProtectedRoute>} />
             <Route path="salary" element={<SalaryPage />} />
             <Route path="holidays" element={<HolidaysPage />} />
           </Route>

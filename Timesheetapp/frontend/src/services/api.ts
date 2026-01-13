@@ -10,8 +10,14 @@ export const apiClient = {
     if (token) headers['Authorization'] = `Bearer ${token}`;
     
     const response = await fetch(`${API_BASE_URL}${endpoint}`, { headers });
-    if (!response.ok) throw new Error('API Error');
-    return response.json();
+    const responseData = await response.json();
+    
+    if (!response.ok) {
+      console.error('❌ API Error Response:', { status: response.status, data: responseData });
+      throw new Error(responseData.error || `API Error: ${response.status}`);
+    }
+    
+    return responseData;
   },
 
   post: async (endpoint: string, data: any) => {
@@ -26,8 +32,15 @@ export const apiClient = {
       headers,
       body: JSON.stringify(data),
     });
-    if (!response.ok) throw new Error('API Error');
-    return response.json();
+    
+    const responseData = await response.json();
+    
+    if (!response.ok) {
+      console.error('❌ API Error Response:', { status: response.status, data: responseData });
+      throw new Error(responseData.error || `API Error: ${response.status}`);
+    }
+    
+    return responseData;
   },
 
   put: async (endpoint: string, data: any) => {
@@ -40,8 +53,15 @@ export const apiClient = {
       headers,
       body: JSON.stringify(data),
     });
-    if (!response.ok) throw new Error('API Error');
-    return response.json();
+    
+    const responseData = await response.json();
+    
+    if (!response.ok) {
+      console.error('❌ API Error Response:', { status: response.status, data: responseData });
+      throw new Error(responseData.error || `API Error: ${response.status}`);
+    }
+    
+    return responseData;
   },
 
   delete: async (endpoint: string) => {
@@ -53,8 +73,15 @@ export const apiClient = {
       method: 'DELETE',
       headers,
     });
-    if (!response.ok) throw new Error('API Error');
-    return response.json();
+    
+    const responseData = await response.json();
+    
+    if (!response.ok) {
+      console.error('❌ API Error Response:', { status: response.status, data: responseData });
+      throw new Error(responseData.error || `API Error: ${response.status}`);
+    }
+    
+    return responseData;
   },
 };
 

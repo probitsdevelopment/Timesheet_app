@@ -4,6 +4,7 @@ const {
   getLeaveBalance,
   getAllAllocations,
   updateAllocation,
+  bulkAllocateLeaves,
 } = require('../controllers/leaveAllocationController');
 
 const router = express.Router();
@@ -18,6 +19,14 @@ router.get('/balance/:userId', verifyToken, (req, res, next) => {
   }
   next();
 }, getLeaveBalance);
+
+// Bulk allocate leaves to all org users (admin only)
+router.post('/bulk', verifyToken, (req, res, next) => {
+  if (req.user?.role !== 'admin') {
+    return res.status(403).json({ error: 'Only admins can bulk allocate leaves' });
+  }
+  next();
+}, bulkAllocateLeaves);
 
 // Get all allocations (admin only)
 router.get('/', verifyToken, (req, res, next) => {

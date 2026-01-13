@@ -31,12 +31,12 @@ import {
 import { useToast } from '@/hooks/use-toast';
 
 const menuItems = [
-  { id: 'timesheets', label: 'Time Sheets', icon: Clock, path: '/dashboard/timesheets' },
-  { id: 'projects', label: 'Projects', icon: FolderKanban, path: '/dashboard/projects' },
-  { id: 'users', label: 'Users', icon: Users, path: '/dashboard/users' },
-  { id: 'approvals', label: 'Approvals', icon: CheckSquare, path: '/dashboard/approvals' },
-  { id: 'salary', label: 'Salary', icon: DollarSign, path: '/dashboard/salary' },
-  { id: 'holidays', label: 'Holidays', icon: Calendar, path: '/dashboard/holidays' },
+  { id: 'timesheets', label: 'Time Sheets', icon: Clock, path: '/dashboard/timesheets', roles: ['admin', 'manager', 'employee'] },
+  { id: 'projects', label: 'Projects', icon: FolderKanban, path: '/dashboard/projects', roles: ['admin', 'manager', 'employee'] },
+  { id: 'users', label: 'Users', icon: Users, path: '/dashboard/users', roles: ['admin', 'manager', 'employee'] },
+  { id: 'approvals', label: 'Approvals', icon: CheckSquare, path: '/dashboard/approvals', roles: ['admin', 'manager'] },
+  { id: 'salary', label: 'Salary', icon: DollarSign, path: '/dashboard/salary', roles: ['admin'] },
+  { id: 'holidays', label: 'Holidays', icon: Calendar, path: '/dashboard/holidays', roles: ['admin', 'manager', 'employee'] },
 ];
 
 const DashboardLayout = () => {
@@ -126,7 +126,9 @@ const DashboardLayout = () => {
 
         {/* Menu Items */}
         <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto">
-          {menuItems.map((item) => {
+          {menuItems
+            .filter((item) => item.roles.includes(currentUser?.role || 'employee'))
+            .map((item) => {
             const Icon = item.icon;
             const isActive = activeSection === item.id;
 

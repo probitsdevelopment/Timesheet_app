@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Clock, Loader2, AlertCircle } from 'lucide-react';
+import { Clock, Loader2, AlertCircle, Check, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const AuthPage = () => {
@@ -27,6 +27,29 @@ const AuthPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isLoading, error } = useAppSelector((state) => state.auth);
+
+  // Password validation requirements
+  const PASSWORD_REQUIREMENTS = {
+    minLength: 8,
+    requireUppercase: true,
+    requireLowercase: true,
+    requireNumbers: true,
+    requireSpecialChar: true
+  };
+
+  // Check password requirements
+  const validatePassword = (password: string) => {
+    const requirements = {
+      minLength: password.length >= PASSWORD_REQUIREMENTS.minLength,
+      hasUppercase: /[A-Z]/.test(password),
+      hasLowercase: /[a-z]/.test(password),
+      hasNumbers: /[0-9]/.test(password),
+      hasSpecialChar: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
+    };
+    
+    const isValid = Object.values(requirements).every(req => req === true);
+    return { requirements, isValid };
+  };
 
   // Load saved registration data on mount
   useEffect(() => {
@@ -74,10 +97,8 @@ const AuthPage = () => {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Register Button Clicked');
 
     if (!registerName || !registerEmail || !registerPassword || !confirmPassword || !registerOrganization) {
-      console.warn('Validation Failed: Missing fields');
       toast({
         title: 'Validation Error',
         description: 'Please fill in all fields',
@@ -87,7 +108,6 @@ const AuthPage = () => {
     }
 
     if (registerPassword !== confirmPassword) {
-      console.warn('Validation Failed: Password mismatch');
       toast({
         title: 'Password Mismatch',
         description: 'Passwords do not match',
@@ -96,26 +116,29 @@ const AuthPage = () => {
       return;
     }
 
-    if (registerPassword.length < 6) {
-      console.warn('Validation Failed: Password too short');
+    // Validate password meets all requirements
+    const { isValid, requirements } = validatePassword(registerPassword);
+    if (!isValid) {
+      const missingRequirements = [];
+      if (!requirements.minLength) missingRequirements.push('8+ characters');
+      if (!requirements.hasUppercase) missingRequirements.push('uppercase letter');
+      if (!requirements.hasLowercase) missingRequirements.push('lowercase letter');
+      if (!requirements.hasNumbers) missingRequirements.push('number');
+      if (!requirements.hasSpecialChar) missingRequirements.push('special character (!@#$%^&* etc)');
+      
       toast({
         title: 'Weak Password',
-        description: 'Password must be at least 6 characters',
+        description: `Password must contain: ${missingRequirements.join(', ')}`,
         variant: 'destructive',
       });
       return;
     }
 
-    console.log('Dispatching registerAsync...');
-    console.log('Form data:', { name: registerName, email: registerEmail, password: registerPassword, organization: registerOrganization });
     const result = await dispatch(
       registerAsync({ name: registerName, email: registerEmail, password: registerPassword, organization: registerOrganization })
     );
-    console.log('Dispatch Result:', result);
 
     if (registerAsync.fulfilled.match(result)) {
-      console.log('Registration Successful!');
-
       // Clear local storage and form
       localStorage.removeItem('registerFormData');
       setRegisterName('');
@@ -131,8 +154,6 @@ const AuthPage = () => {
 
       // Switch to login tab
       setActiveTab('login');
-    } else {
-      console.error('Registration Failed:', result);
     }
   };
 
@@ -252,6 +273,38 @@ const AuthPage = () => {
                       onChange={(e) => setRegisterPassword(e.target.value)}
                       className="h-11"
                     />
+                    {registerPassword && (
+                      <div className="text-xs space-y-1 mt-2 p-3 bg-gray-50 rounded-lg">
+                        <p className="font-semibold text-gray-700 mb-2">Password Requirements:</p>
+                        {(() => {
+                          const { requirements } = validatePassword(registerPassword);
+                          return (
+                            <>
+                              <div className="flex items-center gap-2">
+                                {requirements.minLength ? <Check className="w-4 h-4 text-green-600" /> : <X className="w-4 h-4 text-red-600" />}
+                                <span className={requirements.minLength ? 'text-green-700' : 'text-red-700'}>At least 8 characters</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {requirements.hasUppercase ? <Check className="w-4 h-4 text-green-600" /> : <X className="w-4 h-4 text-red-600" />}
+                                <span className={requirements.hasUppercase ? 'text-green-700' : 'text-red-700'}>One uppercase letter (A-Z)</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {requirements.hasLowercase ? <Check className="w-4 h-4 text-green-600" /> : <X className="w-4 h-4 text-red-600" />}
+                                <span className={requirements.hasLowercase ? 'text-green-700' : 'text-red-700'}>One lowercase letter (a-z)</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {requirements.hasNumbers ? <Check className="w-4 h-4 text-green-600" /> : <X className="w-4 h-4 text-red-600" />}
+                                <span className={requirements.hasNumbers ? 'text-green-700' : 'text-red-700'}>One number (0-9)</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {requirements.hasSpecialChar ? <Check className="w-4 h-4 text-green-600" /> : <X className="w-4 h-4 text-red-600" />}
+                                <span className={requirements.hasSpecialChar ? 'text-green-700' : 'text-red-700'}>One special character (!@#$%^&* etc)</span>
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="confirm-password">Confirm Password</Label>
