@@ -22,7 +22,9 @@ const securityHeaders = (req, res, next) => {
 };
 
 // Rate Limiters
-const loginLimiter = rateLimit({
+const noOpLimiter = (req, res, next) => next(); // No rate limiting
+
+const loginLimiter = process.env.DISABLE_RATE_LIMIT === 'true' ? noOpLimiter : rateLimit({
   windowMs: RATE_LIMITS.login.windowMs,
   max: RATE_LIMITS.login.max,
   message: "Too many login attempts, please try again later",
@@ -30,7 +32,7 @@ const loginLimiter = rateLimit({
   legacyHeaders: false
 });
 
-const registerLimiter = rateLimit({
+const registerLimiter = process.env.DISABLE_RATE_LIMIT === 'true' ? noOpLimiter : rateLimit({
   windowMs: RATE_LIMITS.register.windowMs,
   max: RATE_LIMITS.register.max,
   message: "Too many registration attempts, please try again later"

@@ -21,7 +21,7 @@ import {
   submitTimesheet,
 } from '@/store/reducers/timeSheetReducer';
 import AddEntryModal from '@/components/AddEntryModal';
-import { timesheetService, timesheetSubmissionService, leaveService } from '@/services/api';
+import { timesheetService, timesheetSubmissionService, leaveService, leaveAllocationService } from '@/services/api';
 
 const TimeSheetsPage = () => {
   const dispatch = useAppDispatch();
@@ -36,6 +36,8 @@ const TimeSheetsPage = () => {
   const [leaveForm, setLeaveForm] = useState({ leaveType: '', startDate: '', endDate: '', reason: '' });
   const [approvedLeaves, setApprovedLeaves] = useState<any[]>([]);
   const [leavesLoading, setLeavesLoading] = useState(false);
+  const [leaveBalance, setLeaveBalance] = useState<any>(null);
+  const [balanceLoading, setBalanceLoading] = useState(false);
 
   // Get days in month
   const getDaysInMonth = (dateString: string) => {
@@ -54,19 +56,19 @@ const TimeSheetsPage = () => {
     const fetchData = async () => {
       try {
         dispatch(setLoading(true));
-        console.log('📥 Fetching time entries for user:', currentUser?.id);
+        console.log(' Fetching time entries for user:', currentUser?.id);
         
         // Fetch time entries (required)
         const entriesData = await timesheetService.getAll();
-        console.log('✅ Fetched entries:', entriesData);
-        console.log('📋 Entry data shape:', entriesData?.[0]);
+        console.log(' Fetched entries:', entriesData);
+        console.log(' Entry data shape:', entriesData?.[0]);
         dispatch(setEntries(entriesData));
         
         // Fetch timesheets (optional - might not exist yet)
         if (currentUser) {
           try {
             const timesheetsData = await timesheetSubmissionService.getByUserId(currentUser.id);
-            console.log('✅ Fetched timesheets:', timesheetsData);
+            console.log(' Fetched timesheets:', timesheetsData);
             if (timesheetsData) {
               dispatch(setTimesheets(timesheetsData));
             }
@@ -87,10 +89,23 @@ const TimeSheetsPage = () => {
           } finally {
             setLeavesLoading(false);
           }
+
+          // Fetch leave balance
+          try {
+            setBalanceLoading(true);
+            const balanceData = await leaveAllocationService.getBalance();
+            console.log('✅ Fetched leave balance:', balanceData);
+            setLeaveBalance(balanceData);
+          } catch (balanceError) {
+            console.log('ℹ️ Could not fetch leave balance');
+            setLeaveBalance(null);
+          } finally {
+            setBalanceLoading(false);
+          }
         }
       } catch (error) {
         dispatch(setError('Failed to load time entries'));
-        console.error('❌ Fetch error:', error);
+        console.error('Fetch error:', error);
       } finally {
         dispatch(setLoading(false));
       }
@@ -113,7 +128,11 @@ const TimeSheetsPage = () => {
   // Handle submit timesheet
   const handleSubmitTimesheet = async () => {
     if (!currentUser) {
-      alert('User not found');
+      toast({
+        title: 'Error',
+        description: 'User not found',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -147,10 +166,17 @@ const TimeSheetsPage = () => {
         dispatch(submitTimesheet(updatedTimesheet));
       }
 
-      alert('✅ Timesheet submitted successfully!');
+      toast({
+        title: 'Success',
+        description: 'Timesheet submitted successfully!',
+      });
     } catch (error) {
       console.error('Failed to submit timesheet:', error);
-      alert('Failed to submit timesheet');
+      toast({
+        title: 'Error',
+        description: 'Failed to submit timesheet',
+        variant: 'destructive',
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -159,8 +185,8 @@ const TimeSheetsPage = () => {
   const stats = [
     { label: 'Month Total', value: `${totalMonthHours}h`, change: 'Current month' },
     { label: 'Status', value: timesheetStatus.charAt(0).toUpperCase() + timesheetStatus.slice(1), change: '' },
-    { label: 'Entries', value: monthEntries.length.toString(), change: 'This month' },
-    { label: 'Projects', value: new Set(monthEntries.map((e) => e.project_id)).size.toString(), change: 'Active' },
+    { label: 'Total Leaves', value: leaveBalance?.totalAllocated || '0', change: 'Allocated' },
+    { label: 'Remaining Leaves', value: leaveBalance?.remainingLeaves || '0', change: `Used: ${leaveBalance?.usedLeaves || 0}` },
   ];
 
   return (
@@ -329,8 +355,16 @@ const TimeSheetsPage = () => {
                           try {
                             await timesheetService.delete(entry.id);
                             dispatch(deleteEntry(entry.id));
+                            toast({
+                              title: 'Success',
+                              description: 'Entry deleted successfully',
+                            });
                           } catch (error) {
-                            alert('Failed to delete entry');
+                            toast({
+                              title: 'Error',
+                              description: 'Failed to delete entry',
+                              variant: 'destructive',
+                            });
                             console.error(error);
                           }
                         }}
@@ -371,9 +405,6 @@ const TimeSheetsPage = () => {
                   <SelectItem value="sick">Sick Leave</SelectItem>
                   <SelectItem value="paid">Paid Leave</SelectItem>
                   <SelectItem value="unpaid">Unpaid Leave</SelectItem>
-                  <SelectItem value="maternity">Maternity Leave</SelectItem>
-                  <SelectItem value="paternity">Paternity Leave</SelectItem>
-                  <SelectItem value="bereavement">Bereavement Leave</SelectItem>
                   <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
@@ -446,7 +477,7 @@ const TimeSheetsPage = () => {
                   setShowLeaveModal(false);
                   setLeaveForm({ leaveType: '', startDate: '', endDate: '', reason: '' });
                 } catch (error) {
-                  console.error('❌ Error submitting leave:', error);
+                  console.error('Error submitting leave:', error);
                   toast({
                     title: 'Error',
                     description: 'Failed to submit leave request. Please try again.',

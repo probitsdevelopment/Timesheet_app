@@ -65,16 +65,16 @@ const UsersPage = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        console.log('👥 Fetching users from API...');
+        console.log('Fetching users from API...');
         const token = localStorage.getItem('authToken');
         console.log('🔑 Token available:', !!token);
         dispatch(setLoading(true));
         const data = await userService.getAll();
-        console.log('✅ Users loaded:', data);
-        console.log('📊 User data shape:', data?.[0]);
+        console.log(' Users loaded:', data);
+        console.log(' User data shape:', data?.[0]);
         dispatch(setUsers(data));
       } catch (error) {
-        console.error('❌ Failed to load users:', error);
+        console.error(' Failed to load users:', error);
         dispatch(setError('Failed to load users'));
         toast({
           title: 'Error',
@@ -101,9 +101,9 @@ const UsersPage = () => {
     }
 
     try {
-      console.log('👤 Creating user via API...');
+      console.log(' Creating user via API...');
       dispatch(setLoading(true));
-      console.log('✅ Dispatched setLoading(true)');
+      console.log(' Dispatched setLoading(true)');
       
       const newUser = await userService.create({
         name,
@@ -115,17 +115,16 @@ const UsersPage = () => {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
-      console.log('✅ User created:', newUser);
+      console.log(' User created:', newUser);
 
       // Fetch updated users list
-      console.log('📥 Fetching updated users from API...');
+      console.log(' Fetching updated users from API...');
       const updatedUsers = await userService.getAll();
-      console.log('✅ Updated users fetched:', updatedUsers);
+      console.log(' Updated users fetched:', updatedUsers);
       
-      console.log('📤 Dispatching setUsers action...');
+      console.log(' Dispatching setUsers action...');
       dispatch(setUsers(updatedUsers));
-      console.log('✅ Dispatched setUsers action');
-
+      console.log(' Dispatched setUsers action');
       toast({
         title: 'User Created',
         description: `${name} has been added successfully.`,
@@ -133,7 +132,7 @@ const UsersPage = () => {
       setIsOpen(false);
       resetForm();
     } catch (error) {
-      console.error('❌ Failed to create user:', error);
+      console.error('Failed to create user:', error);
       dispatch(setError('Failed to create user'));
       toast({
         title: 'Error',
@@ -142,16 +141,16 @@ const UsersPage = () => {
       });
     } finally {
       dispatch(setLoading(false));
-      console.log('✅ Dispatched setLoading(false)');
+      console.log('Dispatched setLoading(false)');
     }
   };
 
   const handleDeleteUser = async (user: AppUser) => {
     try {
-      console.log('🗑️ Deleting user via API...');
+      console.log('Deleting user via API...');
       dispatch(setLoading(true));
       await userService.delete(user.id);
-      console.log('✅ User deleted');
+      console.log('User deleted');
 
       // Fetch updated users list
       const updatedUsers = await userService.getAll();
@@ -162,7 +161,7 @@ const UsersPage = () => {
         description: `${user.name} has been removed.`,
       });
     } catch (error) {
-      console.error('❌ Failed to delete user:', error);
+      console.error('Failed to delete user:', error);
       dispatch(setError('Failed to delete user'));
       toast({
         title: 'Error',
@@ -178,15 +177,15 @@ const UsersPage = () => {
     if (!selectedUser || !managerId) return;
 
     try {
-      console.log('👨‍💼 Assigning manager via API...');
+      console.log(' Assigning manager via API...');
       dispatch(setLoading(true));
       await userService.assignManager(selectedUser.id, managerId);
-      console.log('✅ Manager assigned');
+      console.log(' Manager assigned');
 
       // Fetch updated users list
       const updatedUsers = await userService.getAll();
-      console.log('📋 Updated users after assignment:', updatedUsers);
-      console.log('🔍 User with managerId:', updatedUsers.find(u => u.id === selectedUser.id));
+      console.log(' Updated users after assignment:', updatedUsers);
+      console.log(' User with managerId:', updatedUsers.find(u => u.id === selectedUser.id));
       dispatch(setUsers(updatedUsers));
 
       toast({
@@ -197,7 +196,7 @@ const UsersPage = () => {
       setSelectedUser(null);
       setManagerId('');
     } catch (error) {
-      console.error('❌ Failed to assign manager:', error);
+      console.error(' Failed to assign manager:', error);
       dispatch(setError('Failed to assign manager'));
       toast({
         title: 'Error',
@@ -229,9 +228,9 @@ const UsersPage = () => {
 
   const getManagerName = (mId?: string | number) => {
     if (!mId) return '-';
-    console.log('🔎 Looking for manager with ID:', mId, 'Type:', typeof mId);
+    console.log(' Looking for manager with ID:', mId, 'Type:', typeof mId);
     const manager = users.find((u) => u.id === mId || u.id?.toString() === mId?.toString());
-    console.log('🧑 Found manager:', manager?.name);
+    console.log(' Found manager:', manager?.name);
     return manager?.name || '-';
   };
 
@@ -311,7 +310,7 @@ const UsersPage = () => {
                   </SelectContent>
                 </Select>
               </div>
-              {role === 'employee' && managers.length > 0 && (
+              {(role === 'employee' || role === 'manager') && managers.length > 0 && (
                 <div className="space-y-1">
                   <Label className="text-sm">Assign Manager (Optional)</Label>
                   <Select value={managerId} onValueChange={setManagerId}>
@@ -448,7 +447,7 @@ const UsersPage = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          {user.role === 'employee' && (
+                          {(user.role === 'employee' || user.role === 'manager') && (
                             <>
                               <DropdownMenuItem
                                 onClick={() => {

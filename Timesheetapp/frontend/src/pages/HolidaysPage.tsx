@@ -1,14 +1,129 @@
-import { Calendar, Plus, PartyPopper } from 'lucide-react';
+import { Calendar, Plus, PartyPopper, Trash2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useAppSelector } from '@/store/hooks';
+import { useToast } from '@/hooks/use-toast';
+import { holidayService } from '@/services/api';
 
 const HolidaysPage = () => {
-  const upcomingHolidays = [
-    { name: "New Year's Day", date: 'January 1, 2025' },
-    { name: 'Martin Luther King Jr. Day', date: 'January 20, 2025' },
-    { name: "Presidents' Day", date: 'February 17, 2025' },
-    { name: 'Memorial Day', date: 'May 26, 2025' },
-  ];
+  const { toast } = useToast();
+  const { currentUser } = useAppSelector((state) => state.auth);
+  const isAdmin = currentUser?.role === 'admin';
+
+  const [holidays, setHolidays] = useState<any[]>([]);
+  const [formData, setFormData] = useState({ date: '', title: '', type: 'holiday' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch holidays on component mount
+  useEffect(() => {
+    const fetchHolidays = async () => {
+      try {
+        setIsLoading(true);
+        console.log(' Fetching holidays');
+        const data = await holidayService.getAll();
+        console.log('Holidays fetched:', data);
+        setHolidays(data || []);
+      } catch (error) {
+        console.error(' Error fetching holidays:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load holidays',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchHolidays();
+  }, [toast]);
+
+  // Format date to readable format
+  const formatDate = (dateStr: string) => {
+    try {
+      // Handle both YYYY-MM-DD and ISO date formats
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) {
+        return 'Invalid Date';
+      }
+      return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', weekday: 'short' });
+    } catch (error) {
+      return 'Invalid Date';
+    }
+  };
+
+  // Get future holidays (after today), sorted by date
+  const futureHolidays = holidays
+    .filter((h) => {
+      const holidayDate = new Date(h.date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return holidayDate >= today;
+    })
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  // Handle add holiday
+  const handleAddHoliday = async () => {
+    if (!formData.date || !formData.title.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please fill in all fields',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      console.log('Creating holiday:', formData);
+      const newHoliday = await holidayService.create({
+        date: formData.date,
+        title: formData.title,
+        type: formData.type,
+      });
+      console.log('Holiday created:', newHoliday);
+      setHolidays([...holidays, newHoliday]);
+      setFormData({ date: '', title: '', type: 'holiday' });
+      toast({
+        title: 'Success',
+        description: 'Holiday added successfully',
+      });
+    } catch (error) {
+      console.error(' Error adding holiday:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to add holiday. Make sure date is unique.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle delete holiday
+  const handleDeleteHoliday = async (id: number) => {
+    try {
+      console.log('Deleting holiday:', id);
+      await holidayService.delete(id.toString());
+      setHolidays(holidays.filter(h => h.id !== id));
+      toast({
+        title: 'Success',
+        description: 'Holiday deleted',
+      });
+    } catch (error) {
+      console.error('Error deleting holiday:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete holiday',
+        variant: 'destructive',
+      });
+    }
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -17,11 +132,62 @@ const HolidaysPage = () => {
           <h1 className="text-2xl font-bold text-foreground">Holidays</h1>
           <p className="text-muted-foreground">Manage company holidays and time off</p>
         </div>
-        <Button className="gap-2">
-          <Plus className="w-4 h-4" />
-          Add Holiday
-        </Button>
       </div>
+
+      {/* Holiday Entry Form - Admin Only */}
+      {isAdmin && (
+        <Card className="border-0 shadow-md bg-gradient-to-br from-blue-50 to-indigo-50">
+          <CardHeader>
+            <CardTitle>Holiday Entry</CardTitle>
+            <CardDescription>Add new holidays or RH (Regular Holiday)</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="date">Date</Label>
+                  <Input
+                    id="date"
+                    type="date"
+                    value={formData.date}
+                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="title">Title</Label>
+                  <Input
+                    id="title"
+                    type="text"
+                    placeholder="e.g., New Year"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="type">Holiday / RH</Label>
+                  <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
+                    <SelectTrigger id="type">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="holiday">Holiday</SelectItem>
+                      <SelectItem value="rh">RH (Regular Holiday)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <Button
+                onClick={handleAddHoliday}
+                disabled={isSubmitting}
+                className="w-full md:w-auto bg-blue-600 hover:bg-blue-700"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                SAVE
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="border-0 shadow-md">
@@ -29,7 +195,7 @@ const HolidaysPage = () => {
             <CardDescription>Total Holidays</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{upcomingHolidays.length}</div>
+            <div className="text-2xl font-bold">{holidays.length}</div>
             <p className="text-xs text-muted-foreground mt-1">This year</p>
           </CardContent>
         </Card>
@@ -38,8 +204,8 @@ const HolidaysPage = () => {
             <CardDescription>Next Holiday</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-lg font-bold">{upcomingHolidays[0]?.name}</div>
-            <p className="text-xs text-muted-foreground mt-1">{upcomingHolidays[0]?.date}</p>
+            <div className="text-lg font-bold">{futureHolidays[0]?.title || 'N/A'}</div>
+            <p className="text-xs text-muted-foreground mt-1">{futureHolidays[0] ? formatDate(futureHolidays[0]?.date) : 'No upcoming holidays'}</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-md">
@@ -47,7 +213,7 @@ const HolidaysPage = () => {
             <CardDescription>Remaining</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-primary">{upcomingHolidays.length}</div>
+            <div className="text-2xl font-bold text-primary">{futureHolidays.length}</div>
             <p className="text-xs text-muted-foreground mt-1">Holidays left</p>
           </CardContent>
         </Card>
@@ -55,29 +221,47 @@ const HolidaysPage = () => {
 
       <Card className="border-0 shadow-md">
         <CardHeader>
-          <CardTitle>Upcoming Holidays</CardTitle>
-          <CardDescription>Company-wide holidays for this year</CardDescription>
+          <CardTitle>Holidays List</CardTitle>
+          <CardDescription>{isAdmin ? 'Manage holidays' : 'View holidays'}</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {upcomingHolidays.map((holiday, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between p-4 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <PartyPopper className="w-5 h-5 text-primary" />
+          {isLoading ? (
+            <div className="text-center py-8 text-muted-foreground">Loading holidays...</div>
+          ) : holidays.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">No holidays added yet</p>
+          ) : (
+            <div className="space-y-3">
+              {holidays.map((holiday) => (
+                <div
+                  key={holiday.id}
+                  className="flex items-center justify-between p-4 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                >
+                  <div className="flex items-center gap-3 flex-1">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <PartyPopper className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">{holiday.title}</p>
+                      <p className="text-sm text-muted-foreground">{formatDate(holiday.date)}</p>
+                      <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded mt-1 inline-block">
+                        {holiday.type === 'rh' ? 'RH' : 'Holiday'}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium text-foreground">{holiday.name}</p>
-                    <p className="text-sm text-muted-foreground">{holiday.date}</p>
-                  </div>
+                  {isAdmin && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteHoliday(holiday.id)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
                 </div>
-                <Calendar className="w-5 h-5 text-muted-foreground" />
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

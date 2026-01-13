@@ -53,19 +53,19 @@ const ApprovalsPage = () => {
         dispatch(setLoading(true));
         if (currentUser) {
           // For managers, get timesheets submitted to them
-          console.log('📥 Fetching pending timesheets for manager:', { userId: currentUser.id, name: currentUser.name, role: currentUser.role });
+          console.log('Fetching pending timesheets for manager:', { userId: currentUser.id, name: currentUser.name, role: currentUser.role });
           const data = await timesheetSubmissionService.getPendingApprovals(currentUser.id);
-          console.log('✅ Pending timesheets found:', data?.length || 0, data);
+          console.log('Pending timesheets found:', data?.length || 0, data);
           if (data && data.length > 0) {
-            console.log('📊 First timesheet:', data[0]);
+            console.log('First timesheet:', data[0]);
           }
           dispatch(setTimesheets(data || []));
         } else {
-          console.log('⚠️ No current user');
+          console.log('No current user');
         }
       } catch (error) {
         dispatch(setError('Failed to load pending timesheets'));
-        console.error('❌ Error fetching timesheets:', error);
+        console.error('Error fetching timesheets:', error);
       } finally {
         dispatch(setLoading(false));
       }
@@ -79,12 +79,12 @@ const ApprovalsPage = () => {
     const fetchPendingLeaves = async () => {
       try {
         setLeavesLoading(true);
-        console.log('📥 Fetching pending leaves for manager');
+        console.log('Fetching pending leaves for manager');
         const data = await leaveService.getPending();
-        console.log('✅ Pending leaves found:', data?.length || 0, data);
+        console.log('Pending leaves found:', data?.length || 0, data);
         setPendingLeaves(data || []);
       } catch (error) {
-        console.error('❌ Error fetching leaves:', error);
+        console.error('Error fetching leaves:', error);
         toast({
           title: 'Error',
           description: 'Failed to load pending leaves',
@@ -118,7 +118,7 @@ const ApprovalsPage = () => {
       setViewCurrentMonth(timesheet.month);
       
       // Fetch entries for the specific user (not current user)
-      console.log('📥 Fetching entries for user:', timesheet.user_id);
+      console.log('Fetching entries for user:', timesheet.user_id);
       const entries = await timesheetService.getAll();
       
       // Use the API to get specific user's entries
@@ -133,19 +133,23 @@ const ApprovalsPage = () => {
       }
       
       const userEntries = await response.json();
-      console.log('✅ Fetched entries for user', timesheet.user_id, ':', userEntries);
+      console.log('Fetched entries for user', timesheet.user_id, ':', userEntries);
       
       // Filter entries for the selected month
       const filteredEntries = userEntries.filter((e: any) => e.date.startsWith(timesheet.month));
-      console.log('✅ Filtered entries for month', timesheet.month, ':', filteredEntries);
-      console.log('📊 Sample entry:', filteredEntries[0]);
+      console.log('Filtered entries for month', timesheet.month, ':', filteredEntries);
+      console.log('Sample entry:', filteredEntries[0]);
       
       setTimesheetEntries(filteredEntries);
       setViewTimesheetOpen(true);
-      console.log('✅ Loaded timesheet entries:', filteredEntries);
+      console.log('Loaded timesheet entries:', filteredEntries);
     } catch (error) {
       console.error('Failed to load timesheet entries:', error);
-      alert('Failed to load timesheet details');
+      toast({
+        title: 'Error',
+        description: 'Failed to load timesheet details',
+        variant: 'destructive',
+      });
     } finally {
       setLoadingEntries(false);
     }
@@ -165,7 +169,11 @@ const ApprovalsPage = () => {
   // Handle approve timesheet
   const handleApprove = async (timesheetId: string) => {
     if (!currentUser) {
-      alert('User not found');
+      toast({
+        title: 'Error',
+        description: 'User not found',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -173,10 +181,17 @@ const ApprovalsPage = () => {
       setIsProcessing(true);
       await timesheetSubmissionService.approve(timesheetId, currentUser.id);
       dispatch(approveTimesheet({ id: timesheetId, approvedBy: currentUser.id }));
-      alert('✅ Timesheet approved successfully!');
+      toast({
+        title: 'Success',
+        description: 'Timesheet approved successfully!',
+      });
     } catch (error) {
       console.error('Failed to approve timesheet:', error);
-      alert('Failed to approve timesheet');
+      toast({
+        title: 'Error',
+        description: 'Failed to approve timesheet',
+        variant: 'destructive',
+      });
     } finally {
       setIsProcessing(false);
     }
@@ -185,7 +200,11 @@ const ApprovalsPage = () => {
   // Handle reject timesheet
   const handleReject = async () => {
     if (!selectedTimesheet || !rejectionReason.trim()) {
-      alert('Please provide a rejection reason');
+      toast({
+        title: 'Error',
+        description: 'Please provide a rejection reason',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -196,10 +215,17 @@ const ApprovalsPage = () => {
       setRejectionDialogOpen(false);
       setRejectionReason('');
       setSelectedTimesheet(null);
-      alert('❌ Timesheet rejected!');
+      toast({
+        title: 'Success',
+        description: 'Timesheet rejected!',
+      });
     } catch (error) {
       console.error('Failed to reject timesheet:', error);
-      alert('Failed to reject timesheet');
+      toast({
+        title: 'Error',
+        description: 'Failed to reject timesheet',
+        variant: 'destructive',
+      });
     } finally {
       setIsProcessing(false);
     }

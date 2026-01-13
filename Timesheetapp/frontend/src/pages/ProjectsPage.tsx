@@ -53,12 +53,12 @@ const ProjectsPage = () => {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        console.log('📥 Fetching projects...');
+        console.log(' Fetching projects...');
         const data = await projectService.getAll();
-        console.log('✅ Projects fetched:', data);
+        console.log(' Projects fetched:', data);
         dispatch(setProjects(data || []));
       } catch (error) {
-        console.error('❌ Failed to fetch projects:', error);
+        console.error(' Failed to fetch projects:', error);
         toast({
           title: 'Error',
           description: 'Failed to load projects',
@@ -81,7 +81,7 @@ const ProjectsPage = () => {
     }
 
     try {
-      console.log('📤 Creating project via API...');
+      console.log(' Creating project via API...');
       const newProject = await projectService.create({
         name: projectName,
         code: projectCode ? projectCode.toUpperCase() : undefined,
@@ -89,7 +89,7 @@ const ProjectsPage = () => {
         createdBy: currentUser?.id || 'unknown',
         status: 'active',
       });
-      console.log('✅ Project created:', newProject);
+      console.log(' Project created:', newProject);
 
       // Fetch updated projects list
       const updatedProjects = await projectService.getAll();
@@ -104,7 +104,7 @@ const ProjectsPage = () => {
       setProjectCode('');
       setStartDate(new Date());
     } catch (error) {
-      console.error('❌ Failed to create project:', error);
+      console.error(' Failed to create project:', error);
       toast({
         title: 'Error',
         description: 'Failed to create project',
@@ -115,9 +115,9 @@ const ProjectsPage = () => {
 
   const handleDeleteProject = async (project: Project) => {
     try {
-      console.log('🗑️ Deleting project via API...');
+      console.log(' Deleting project via API...');
       await projectService.delete(project.id);
-      console.log('✅ Project deleted');
+      console.log(' Project deleted');
 
       // Fetch updated projects list
       const updatedProjects = await projectService.getAll();
@@ -128,7 +128,7 @@ const ProjectsPage = () => {
         description: `${project.name} has been deleted.`,
       });
     } catch (error) {
-      console.error('❌ Failed to delete project:', error);
+      console.error(' Failed to delete project:', error);
       toast({
         title: 'Error',
         description: 'Failed to delete project',

@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:3001';
+const API_BASE_URL = 'http://192.168.1.12:3001';
 
 // Get token from localStorage
 const getToken = () => localStorage.getItem('authToken');
@@ -113,11 +113,6 @@ export const approvalService = {
   update: (id: string, approval: any) => apiClient.put(`/approvals/${id}`, approval),
 };
 
-// Holiday Service
-export const holidayService = {
-  getAll: () => apiClient.get('/holidays'),
-};
-
 // Leave Service
 export const leaveService = {
   getAll: () => apiClient.get('/leaves'),
@@ -146,4 +141,21 @@ export const salaryService = {
   getByUserId: (userId: string) => apiClient.get(`/salaries?userId=${userId}`),
   create: (salary: any) => apiClient.post('/salaries', salary),
   update: (id: string, salary: any) => apiClient.put(`/salaries/${id}`, salary),
+};
+
+// Holiday Service
+export const holidayService = {
+  getAll: () => apiClient.get('/holidays'),
+  getById: (id: string) => apiClient.get(`/holidays/${id}`),
+  create: (holiday: any) => apiClient.post('/holidays', holiday),
+  update: (id: string, holiday: any) => apiClient.put(`/holidays/${id}`, holiday),
+  delete: (id: string) => apiClient.delete(`/holidays/${id}`),
+};
+
+// Leave Allocation Service
+export const leaveAllocationService = {
+  getBalance: () => apiClient.get('/leave-allocation/balance'),
+  getBalanceForUser: (userId: string) => apiClient.get(`/leave-allocation/balance/${userId}`),
+  getAll: () => apiClient.get('/leave-allocation'),
+  update: (data: any) => apiClient.put('/leave-allocation', data),
 };

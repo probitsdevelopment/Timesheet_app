@@ -21,6 +21,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { useToast } from '@/hooks/use-toast';
 import {
   toggleAddEntryModal,
   addEntry,
@@ -44,6 +45,7 @@ interface FormEntry {
 
 const AddEntryModal = () => {
   const dispatch = useAppDispatch();
+  const { toast } = useToast();
   const { showAddEntryModal, selectedDate, entries, tempFormEntries } = useAppSelector((state) => state.timesheet);
   const { currentUser } = useAppSelector((state) => state.auth);
   const { projects } = useAppSelector((state) => state.projects);
@@ -139,12 +141,20 @@ const AddEntryModal = () => {
   const handleAddEntry = () => {
     // Validate
     if (!formData.taskStart || !formData.taskEnd || !formData.project_id || !formData.description) {
-      alert('Please fill in all fields');
+      toast({
+        title: 'Validation Error',
+        description: 'Please fill in all fields',
+        variant: 'destructive',
+      });
       return;
     }
 
     if (formData.hours <= 0) {
-      alert('End time must be after start time');
+      toast({
+        title: 'Validation Error',
+        description: 'End time must be after start time',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -168,7 +178,11 @@ const AddEntryModal = () => {
 
   const handleSaveAll = async () => {
     if (tempFormEntries.length === 0) {
-      alert('Please add at least one time entry');
+      toast({
+        title: 'Error',
+        description: 'Please add at least one time entry',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -203,12 +217,19 @@ const AddEntryModal = () => {
         dispatch(addEntry(newEntry));
       }
 
-      alert('✅ All entries saved successfully!');
+      toast({
+        title: 'Success',
+        description: 'All entries saved successfully!',
+      });
       dispatch(clearTempFormEntries());
       handleClose();
     } catch (error) {
       console.error('❌ Error saving entries:', error);
-      alert('Failed to save entries');
+      toast({
+        title: 'Error',
+        description: 'Failed to save entries',
+        variant: 'destructive',
+      });
     }
   };
 

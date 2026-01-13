@@ -15,11 +15,11 @@ const DEFAULT_USER_ROLE = 'admin';
 const RATE_LIMITS = {
   login: {
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5
+    max: 50  // Increased from 5 to 50 attempts
   },
   register: {
     windowMs: 60 * 60 * 1000, // 1 hour
-    max: 10
+    max: 50  // Increased from 10 to 50 attempts
   }
 };
 
