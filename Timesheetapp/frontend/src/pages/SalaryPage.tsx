@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { DollarSign, Trash2, Save } from 'lucide-react';
+import { DollarSign, Trash2, Save, Play, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,7 +32,7 @@ import {
 } from '@/components/ui/table';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { useToast } from '@/hooks/use-toast';
-import { apiClient } from '@/services/api';
+import { apiClient, salaryProcessingService } from '@/services/api';
 import { setUsers, setLoading } from '@/store/reducers/userReducer';
 import { userService } from '@/services/api';
 
@@ -47,6 +47,15 @@ const SalaryPage = () => {
   const [basicSalary, setBasicSalary] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [salaries, setSalaries] = useState<any[]>([]);
+
+  // Salary Processing States
+  const [processingEmployeeId, setProcessingEmployeeId] = useState<string>('');
+  const [processingMonth, setProcessingMonth] = useState<string>(
+    new Date().toISOString().split('T')[0].substring(0, 7)
+  );
+  const [processingLoading, setProcessingLoading] = useState(false);
+  const [processingResult, setProcessingResult] = useState<any>(null);
+  const [timesheetStatus, setTimesheetStatus] = useState<string>('');
 
   // Check if user is admin
   useEffect(() => {
@@ -199,6 +208,41 @@ const SalaryPage = () => {
     return users.find((u) => parseInt(u.id) === userId)?.name || 'Unknown';
   };
 
+  const handleProcessSalary = async () => {
+    if (!processingEmployeeId || !processingMonth) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please select an employee and month',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setProcessingLoading(true);
+    try {
+      const result = await salaryProcessingService.process({
+        userId: parseInt(processingEmployeeId),
+        month: processingMonth,
+      });
+      setProcessingResult(result);
+      setTimesheetStatus(result.timesheet_approved ? 'APPROVED' : 'PENDING');
+      
+      toast({
+        title: '✅ Salary Processed',
+        description: `Salary processed for ${getEmployeeName(parseInt(processingEmployeeId))} - ${processingMonth}`,
+      });
+    } catch (error: any) {
+      console.error('Error processing salary:', error);
+      toast({
+        title: '❌ Error',
+        description: error.message || 'Failed to process salary',
+        variant: 'destructive',
+      });
+    } finally {
+      setProcessingLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
@@ -313,6 +357,176 @@ const SalaryPage = () => {
                 >
                   Cancel
                 </Button>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Salary Processing Section */}
+      <Card className="border-0 shadow-md">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Play className="w-4 h-4" />
+            Monthly Salary Processing
+          </CardTitle>
+          <CardDescription>Process monthly salary for employees based on leaves and timesheet approval</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Employee Selection */}
+              <div className="space-y-2">
+                <Label htmlFor="processing-employee">Employee</Label>
+                <Select value={processingEmployeeId} onValueChange={setProcessingEmployeeId}>
+                  <SelectTrigger id="processing-employee" className="h-10">
+                    <SelectValue placeholder="Select employee..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {employees.length === 0 ? (
+                      <div className="p-2 text-sm text-muted-foreground">No employees found</div>
+                    ) : (
+                      employees.map((emp) => (
+                        <SelectItem key={emp.id} value={emp.id.toString()}>
+                          {emp.name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Month Selection */}
+              <div className="space-y-2">
+                <Label htmlFor="processing-month">Month</Label>
+                <Input
+                  id="processing-month"
+                  type="month"
+                  value={processingMonth}
+                  onChange={(e) => setProcessingMonth(e.target.value)}
+                  className="h-10"
+                />
+              </div>
+
+              {/* Process Button */}
+              <div className="flex items-end">
+                <Button
+                  onClick={handleProcessSalary}
+                  disabled={processingLoading || !processingEmployeeId || !processingMonth}
+                  className="w-full h-10"
+                >
+                  {processingLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-4 h-4 mr-2" />
+                      Process Salary
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {/* Processing Result */}
+            {processingResult && (
+              <div className="space-y-4 mt-6 p-4 bg-slate-50 rounded-lg border">
+                <h3 className="font-semibold flex items-center gap-2">
+                  {processingResult.status === 'PROCESSED' ? (
+                    <>
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                      <span>Salary Processed Successfully</span>
+                    </>
+                  ) : (
+                    <>
+                      <AlertCircle className="w-5 h-5 text-amber-600" />
+                      <span>Salary On Hold</span>
+                    </>
+                  )}
+                </h3>
+
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {/* Basic Salary */}
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Basic Salary</p>
+                    <p className="text-lg font-semibold">
+                      ₹{processingResult.basicSalary?.toLocaleString('en-IN')}
+                    </p>
+                  </div>
+
+                  {/* Working Days */}
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Working Days</p>
+                    <p className="text-lg font-semibold">{processingResult.workingDays}</p>
+                  </div>
+
+                  {/* Per Day Salary */}
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Per Day Salary</p>
+                    <p className="text-lg font-semibold">
+                      ₹{Math.round(processingResult.basicSalary / processingResult.workingDays).toLocaleString('en-IN')}
+                    </p>
+                  </div>
+
+                  {/* Total Leaves */}
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Total Leaves Taken</p>
+                    <p className="text-lg font-semibold">{processingResult.totalLeaves} days</p>
+                  </div>
+
+                  {/* Paid Leaves */}
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Paid Leaves</p>
+                    <p className="text-lg font-semibold text-green-600">{processingResult.paidLeavesAllowed} days</p>
+                  </div>
+
+                  {/* Unpaid Leaves */}
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Unpaid Leaves (Loss of Pay)</p>
+                    <p className="text-lg font-semibold text-red-600">{processingResult.unpaidLeaves} days</p>
+                  </div>
+                </div>
+
+                <div className="border-t pt-4 mt-4">
+                  {/* Deduction */}
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="text-muted-foreground">Deduction (Unpaid Leaves)</span>
+                    <span className="font-semibold text-red-600">
+                      - ₹{processingResult.deduction?.toLocaleString('en-IN')}
+                    </span>
+                  </div>
+
+                  {/* Final Salary */}
+                  <div className="flex justify-between items-center p-3 bg-white rounded border-2 border-green-200">
+                    <span className="font-semibold text-lg">Final Monthly Salary</span>
+                    <span className="font-bold text-2xl text-green-600">
+                      ₹{processingResult.finalSalary?.toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Timesheet Status */}
+                <div className="mt-4 p-3 rounded bg-white border flex items-center justify-between">
+                  <span className="text-sm font-medium">Timesheet Status</span>
+                  <span
+                    className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      processingResult.timesheet_approved
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}
+                  >
+                    {processingResult.timesheet_approved ? '✅ Approved' : '⏳ Pending'}
+                  </span>
+                </div>
+
+                {processingResult.status === 'HOLD' && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded text-sm text-amber-900">
+                    <p className="font-medium mb-1">⚠️ Status: On Hold</p>
+                    <p>This salary is on hold because the timesheet for {processingMonth} is not approved yet. It will be finalized once the timesheet is approved by the manager.</p>
+                  </div>
+                )}
               </div>
             )}
           </div>

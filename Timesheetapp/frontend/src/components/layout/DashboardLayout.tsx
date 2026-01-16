@@ -36,6 +36,7 @@ const menuItems = [
   { id: 'users', label: 'Users', icon: Users, path: '/dashboard/users', roles: ['admin', 'manager', 'employee'] },
   { id: 'approvals', label: 'Approvals', icon: CheckSquare, path: '/dashboard/approvals', roles: ['admin', 'manager'] },
   { id: 'salary', label: 'Salary', icon: DollarSign, path: '/dashboard/salary', roles: ['admin'] },
+  { id: 'my-salary', label: 'My Salary', icon: DollarSign, path: '/dashboard/my-salary', roles: ['manager', 'employee'] },
   { id: 'holidays', label: 'Holidays', icon: Calendar, path: '/dashboard/holidays', roles: ['admin', 'manager', 'employee'] },
 ];
 

@@ -39,6 +39,7 @@ const TimeSheetsPage = () => {
   const [leaveBalance, setLeaveBalance] = useState<any>(null);
   const [balanceLoading, setBalanceLoading] = useState(false);
   const [requestedDays, setRequestedDays] = useState<number>(0);
+  const [isLossOfPayLeave, setIsLossOfPayLeave] = useState(false);
 
   // Get days in month
   const getDaysInMonth = (dateString: string) => {
@@ -128,14 +129,8 @@ const TimeSheetsPage = () => {
 
   // Map leave type names between form and allocation system
   const mapLeaveType = (formLeaveType: string): string => {
-    const mapping: { [key: string]: string } = {
-      'casual': 'Casual',
-      'sick': 'Sick',
-      'paid': 'Earned',
-      'unpaid': 'Personal',
-      'other': 'Special',
-    };
-    return mapping[formLeaveType] || formLeaveType;
+    // Leave types now match database exactly, so just return as-is
+    return formLeaveType || 'Leave';
   };
 
   // Calculate requested days for current form
@@ -150,9 +145,13 @@ const TimeSheetsPage = () => {
   // Get available balance for selected leave type
   const getAvailableBalance = (): number => {
     if (!leaveBalance || !leaveForm.leaveType) return 0;
-    const mappedType = mapLeaveType(leaveForm.leaveType);
-    const typeBalance = leaveBalance.byType?.[mappedType];
-    return typeBalance?.remaining || 0;
+    
+    // Leave types now match database exactly
+    const typeBalance = leaveBalance.byType?.[leaveForm.leaveType];
+    const remaining = typeBalance?.remaining || 0;
+    
+    console.log(`🔍 Balance for ${leaveForm.leaveType}:`, remaining);
+    return remaining;
   };
 
   // Calculate actual requested days
@@ -420,15 +419,21 @@ const TimeSheetsPage = () => {
       <AddEntryModal />
 
       {/* Apply Leave Modal */}
-      <Dialog open={showLeaveModal} onOpenChange={setShowLeaveModal}>
-        <DialogContent className="sm:max-w-[500px]">
+      <Dialog open={showLeaveModal} onOpenChange={(open) => {
+        setShowLeaveModal(open);
+        if (!open) {
+          setLeaveForm({ leaveType: '', startDate: '', endDate: '', reason: '' });
+          setIsLossOfPayLeave(false);
+        }
+      }}>
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Apply for Leave</DialogTitle>
             <DialogDescription>
               Submit a leave request to your manager for approval.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-4 flex-1 overflow-y-auto pr-4">
             <div className="space-y-2">
               <Label htmlFor="leave-type">Type of Leave</Label>
               <Select value={leaveForm.leaveType} onValueChange={(value) => setLeaveForm({ ...leaveForm, leaveType: value })}>
@@ -436,11 +441,10 @@ const TimeSheetsPage = () => {
                   <SelectValue placeholder="Select leave type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="casual">Casual Leave</SelectItem>
-                  <SelectItem value="sick">Sick Leave</SelectItem>
-                  <SelectItem value="paid">Paid Leave</SelectItem>
-                  <SelectItem value="unpaid">Unpaid Leave</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
+                  <SelectItem value="Casual">Casual Leave</SelectItem>
+                  <SelectItem value="Sick">Sick Leave</SelectItem>
+                  <SelectItem value="Personal">Personal Leave</SelectItem>
+                  <SelectItem value="Special">Special Leave</SelectItem>
                 </SelectContent>
               </Select>
               {leaveForm.leaveType && leaveBalance && (
@@ -497,11 +501,29 @@ const TimeSheetsPage = () => {
                 </div>
 
                 {hasInsufficientBalance && (
-                  <div className="text-sm p-3 bg-red-50 border border-red-200 rounded-lg flex gap-2">
-                    <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                    <p className="text-red-800">
-                      <span className="font-semibold">Insufficient Balance:</span> You don't have enough {mapLeaveType(leaveForm.leaveType)} leave days. You need {calculateRequestedDays()} days but only have {getAvailableBalance()} days available.
-                    </p>
+                  <div className="space-y-3">
+                    <div className="text-sm p-3 bg-red-50 border border-red-200 rounded-lg flex gap-2">
+                      <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                      <p className="text-red-800">
+                        <span className="font-semibold">Insufficient Balance:</span> You don't have enough {mapLeaveType(leaveForm.leaveType)} leave days. You need {calculateRequestedDays()} days but only have {getAvailableBalance()} days available.
+                      </p>
+                    </div>
+                    <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                      <label className="flex items-start gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={isLossOfPayLeave}
+                          onChange={(e) => setIsLossOfPayLeave(e.target.checked)}
+                          className="mt-1 w-4 h-4 accent-orange-600"
+                        />
+                        <span className="text-sm text-orange-800">
+                          <span className="font-semibold">I acknowledge this will be Loss of Pay</span>
+                          <p className="text-xs mt-1 text-orange-700">
+                            By checking this, I understand that the leave days exceeding my allocated balance will be marked as unpaid and will be deducted from my salary.
+                          </p>
+                        </span>
+                      </label>
+                    </div>
                   </div>
                 )}
               </div>
@@ -513,6 +535,7 @@ const TimeSheetsPage = () => {
               onClick={() => {
                 setShowLeaveModal(false);
                 setLeaveForm({ leaveType: '', startDate: '', endDate: '', reason: '' });
+                setIsLossOfPayLeave(false);
               }}
             >
               Cancel
@@ -548,11 +571,13 @@ const TimeSheetsPage = () => {
                   const availableBalance = getAvailableBalance();
                   const mappedType = mapLeaveType(leaveForm.leaveType);
 
-                  // Check if user has sufficient balance
-                  if (requestedDays > availableBalance) {
+                  // Check if user has sufficient balance (allow Loss of Pay if checkbox is checked)
+                  const hasInsufficientBalance = requestedDays > availableBalance;
+                  
+                  if (hasInsufficientBalance && !isLossOfPayLeave) {
                     toast({
                       title: 'Insufficient Leave Balance',
-                      description: `You requested ${requestedDays} days of ${mappedType} leave, but only have ${availableBalance} days available.`,
+                      description: `You requested ${requestedDays} days of ${mappedType} leave, but only have ${availableBalance} days available. Check "Loss of Pay" to continue.`,
                       variant: 'destructive',
                     });
                     setIsSubmittingLeave(false);
@@ -564,6 +589,7 @@ const TimeSheetsPage = () => {
                     start_date: leaveForm.startDate,
                     end_date: leaveForm.endDate,
                     reason: leaveForm.reason,
+                    is_paid_leave: !hasInsufficientBalance,
                   });
 
                   toast({
@@ -573,6 +599,7 @@ const TimeSheetsPage = () => {
 
                   setShowLeaveModal(false);
                   setLeaveForm({ leaveType: '', startDate: '', endDate: '', reason: '' });
+                  setIsLossOfPayLeave(false);
                 } catch (error) {
                   console.error('Error submitting leave:', error);
                   toast({
@@ -585,7 +612,7 @@ const TimeSheetsPage = () => {
                 }
               }}
               className="bg-purple-600 hover:bg-purple-700"
-              disabled={!leaveForm.leaveType || !leaveForm.startDate || !leaveForm.endDate || isSubmittingLeave || hasInsufficientBalance}
+              disabled={!leaveForm.leaveType || !leaveForm.startDate || !leaveForm.endDate || isSubmittingLeave || (hasInsufficientBalance && !isLossOfPayLeave)}
             >
               {isSubmittingLeave ? (
                 <>

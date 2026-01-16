@@ -416,7 +416,7 @@ const UsersPage = () => {
                   <TableHead>Role</TableHead>
                   <TableHead>Manager</TableHead>
                   <TableHead>Joined</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  {isAdmin && <TableHead className="text-right">Actions</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -444,38 +444,40 @@ const UsersPage = () => {
                     <TableCell className="text-muted-foreground">
                       {user.createdAt ? format(new Date(user.createdAt + (user.createdAt.includes('T') ? '' : 'T00:00:00')), 'MMM d, yyyy') : 'N/A'}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          {(user.role === 'employee' || user.role === 'manager') && (
-                            <>
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setSelectedUser(user);
-                                  setIsManagerDialogOpen(true);
-                                }}
-                              >
-                                <UserCog className="w-4 h-4 mr-2" />
-                                Assign Manager
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                            </>
-                          )}
-                          <DropdownMenuItem
-                            onClick={() => handleDeleteUser(user)}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+                    {isAdmin && (
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {(user.role === 'employee' || user.role === 'manager') && (
+                              <>
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setSelectedUser(user);
+                                    setIsManagerDialogOpen(true);
+                                  }}
+                                >
+                                  <UserCog className="w-4 h-4 mr-2" />
+                                  Assign Manager
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                              </>
+                            )}
+                            <DropdownMenuItem
+                              onClick={() => handleDeleteUser(user)}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>

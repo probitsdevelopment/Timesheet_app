@@ -11,6 +11,7 @@ import ProjectsPage from "./pages/ProjectsPage";
 import UsersPage from "./pages/UsersPage";
 import ApprovalsPage from "./pages/ApprovalsPage";
 import SalaryPage from "./pages/SalaryPage";
+import MySalaryPage from "./pages/MySalaryPage";
 import HolidaysPage from "./pages/HolidaysPage";
 import NotFound from "./pages/NotFound";
 
@@ -45,6 +46,7 @@ const App = () => (
             <Route path="users" element={<UsersPage />} />
             <Route path="approvals" element={<ProtectedRoute allowedRoles={['admin', 'manager']}><ApprovalsPage /></ProtectedRoute>} />
             <Route path="salary" element={<SalaryPage />} />
+            <Route path="my-salary" element={<MySalaryPage />} />
             <Route path="holidays" element={<HolidaysPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />

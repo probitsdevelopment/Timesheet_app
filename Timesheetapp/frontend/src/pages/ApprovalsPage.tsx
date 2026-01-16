@@ -648,6 +648,11 @@ const ApprovalsPage = () => {
                             <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">
                               {leave.number_of_days} day{leave.number_of_days !== 1 ? 's' : ''}
                             </span>
+                            {leave.is_paid_leave === false && (
+                              <span className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-700 font-semibold">
+                                Loss of Pay
+                              </span>
+                            )}
                           </div>
                           <div className="flex gap-4 text-sm text-muted-foreground mb-2">
                             <span className="flex items-center gap-1">

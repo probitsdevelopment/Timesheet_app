@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://192.168.1.12:3001';
+const API_BASE_URL = 'http://localhost:3001';
 
 // Get token from localStorage
 const getToken = () => localStorage.getItem('authToken');
@@ -185,4 +185,16 @@ export const leaveAllocationService = {
   getBalanceForUser: (userId: string) => apiClient.get(`/leave-allocation/balance/${userId}`),
   getAll: () => apiClient.get('/leave-allocation'),
   update: (data: any) => apiClient.put('/leave-allocation', data),
+};
+
+// Salary Processing Service
+export const salaryProcessingService = {
+  process: (data: { userId: number; month: string }) => 
+    apiClient.post('/salary-processing/process', data),
+  getByUserAndMonth: (userId: number, month: string) => 
+    apiClient.get(`/salary-processing/user/${userId}/${month}`),
+  getByMonth: (month: string) => 
+    apiClient.get(`/salary-processing/month?month=${month}`),
+  getHistory: (userId: number) => 
+    apiClient.get(`/salary-processing/history/${userId}`),
 };

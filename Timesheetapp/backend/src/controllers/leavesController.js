@@ -8,7 +8,7 @@ const getAllLeaves = async (req, res) => {
     const organization = req.user.organization || DEFAULT_ORGANIZATION;
     
     const leaves = await db.getAll(
-      "SELECT id, user_id, leave_type, TO_CHAR(start_date, 'YYYY-MM-DD') as start_date, TO_CHAR(end_date, 'YYYY-MM-DD') as end_date, reason, status, submitted_to, rejection_reason, created_at, organization FROM leaves WHERE user_id = $1 AND organization = $2 ORDER BY start_date DESC",
+      "SELECT id, user_id, leave_type, TO_CHAR(start_date, 'YYYY-MM-DD') as start_date, TO_CHAR(end_date, 'YYYY-MM-DD') as end_date, reason, status, submitted_to, rejection_reason, is_paid_leave, created_at, organization FROM leaves WHERE user_id = $1 AND organization = $2 ORDER BY start_date DESC",
       [req.user.userId, organization]
     );
 
@@ -28,7 +28,7 @@ const getLeaveById = async (req, res) => {
     const organization = req.user.organization || DEFAULT_ORGANIZATION;
     
     const leave = await db.getOne(
-      "SELECT id, user_id, leave_type, TO_CHAR(start_date, 'YYYY-MM-DD') as start_date, TO_CHAR(end_date, 'YYYY-MM-DD') as end_date, reason, status, submitted_to, rejection_reason, created_at, organization FROM leaves WHERE id = $1 AND organization = $2",
+      "SELECT id, user_id, leave_type, TO_CHAR(start_date, 'YYYY-MM-DD') as start_date, TO_CHAR(end_date, 'YYYY-MM-DD') as end_date, reason, status, submitted_to, rejection_reason, is_paid_leave, created_at, organization FROM leaves WHERE id = $1 AND organization = $2",
       [req.params.id, organization]
     );
 
@@ -49,7 +49,7 @@ const getLeaveById = async (req, res) => {
 // Create leave request
 const createLeave = async (req, res) => {
   try {
-    const { leave_type, start_date, end_date, reason, submitted_to } = req.body;
+    const { leave_type, start_date, end_date, reason, submitted_to, is_paid_leave } = req.body;
     const organization = req.user.organization || DEFAULT_ORGANIZATION;
 
     // Validate required fields
@@ -74,11 +74,14 @@ const createLeave = async (req, res) => {
       managerId = req.user.managerid;
     }
 
-    console.log(`📝 Creating leave - Type: ${leave_type}, Days: ${daysDiff}, From: ${start_date} To: ${end_date}, Manager: ${managerId || 'None'}`);
+    // Default is_paid_leave to true if not provided
+    const isPaidLeave = is_paid_leave !== undefined ? is_paid_leave : true;
+
+    console.log(`📝 Creating leave - Type: ${leave_type}, Days: ${daysDiff}, Paid: ${isPaidLeave}, From: ${start_date} To: ${end_date}, Manager: ${managerId || 'None'}`);
 
     const result = await db.query(
-      "INSERT INTO leaves (user_id, leave_type, start_date, end_date, reason, status, submitted_to, number_of_days, organization) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, user_id, leave_type, TO_CHAR(start_date, 'YYYY-MM-DD') as start_date, TO_CHAR(end_date, 'YYYY-MM-DD') as end_date, reason, status, submitted_to, number_of_days, created_at, organization",
-      [req.user.userId, leave_type, start_date, end_date, reason || "", "pending", managerId || null, daysDiff, organization]
+      "INSERT INTO leaves (user_id, leave_type, start_date, end_date, reason, status, submitted_to, number_of_days, is_paid_leave, organization) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id, user_id, leave_type, TO_CHAR(start_date, 'YYYY-MM-DD') as start_date, TO_CHAR(end_date, 'YYYY-MM-DD') as end_date, reason, status, submitted_to, number_of_days, is_paid_leave, created_at, organization",
+      [req.user.userId, leave_type, start_date, end_date, reason || "", "pending", managerId || null, daysDiff, isPaidLeave, organization]
     );
 
     const leave = result.rows[0];
@@ -196,7 +199,7 @@ const getLeavesByUserId = async (req, res) => {
     const organization = req.user.organization || DEFAULT_ORGANIZATION;
 
     const leaves = await db.getAll(
-      "SELECT id, user_id, leave_type, TO_CHAR(start_date, 'YYYY-MM-DD') as start_date, TO_CHAR(end_date, 'YYYY-MM-DD') as end_date, reason, status, submitted_to, rejection_reason, number_of_days, created_at, organization FROM leaves WHERE user_id = $1 AND organization = $2 ORDER BY start_date DESC",
+      "SELECT id, user_id, leave_type, TO_CHAR(start_date, 'YYYY-MM-DD') as start_date, TO_CHAR(end_date, 'YYYY-MM-DD') as end_date, reason, status, submitted_to, rejection_reason, number_of_days, is_paid_leave, created_at, organization FROM leaves WHERE user_id = $1 AND organization = $2 ORDER BY start_date DESC",
       [userId, organization]
     );
 
@@ -228,6 +231,7 @@ const getPendingLeaves = async (req, res) => {
         l.reason, 
         l.status, 
         l.number_of_days,
+        l.is_paid_leave,
         l.created_at, 
         l.organization 
       FROM leaves l 

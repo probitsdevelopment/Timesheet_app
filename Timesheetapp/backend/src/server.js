@@ -17,6 +17,7 @@ const leavesRoutes = require('./routes/leavesRoutes');
 const leaveAllocationRoutes = require('./routes/leaveAllocationRoutes');
 const holidaysRoutes = require('./routes/holidaysRoutes');
 const salaryRoutes = require('./routes/salaryRoutes');
+const salaryProcessingRoutes = require('./routes/salaryProcessingRoutes');
 
 // ==================== GLOBAL MIDDLEWARE ====================
 
@@ -66,6 +67,9 @@ app.use('/holidays', holidaysRoutes);
 
 // Salaries routes
 app.use('/salaries', salaryRoutes);
+
+// Salary processing routes
+app.use('/salary-processing', salaryProcessingRoutes);
 
 // Legacy route support for /my-time-entries
 const { getUserTimeEntries } = require('./controllers/timeEntriesController');
