@@ -116,6 +116,15 @@ const MySalaryPage = () => {
       // Create HTML structure
       element.innerHTML = `
         <div style="border: 1px solid #ddd; padding: 30px; background: white;">
+          <!-- Company Header -->
+          <div style="text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #333;">
+            <img src="/probits-logo.png" style="height: 50px; margin-bottom: 10px; object-fit: contain;" alt="ProBits Logo" />
+            <h2 style="margin: 0 0 10px 0; font-size: 24px; font-weight: bold; color: #000;">ProBits Technologies Pvt Ltd</h2>
+            <p style="margin: 5px 0; color: #666; font-size: 13px;">No 136, Road, 14, Hobli, Kengeri, Doddabale, Karnataka 560060</p>
+            <p style="margin: 5px 0; color: #666; font-size: 13px;">Bengaluru, Karnataka</p>
+            <p style="margin: 5px 0; color: #666; font-size: 13px;">Phone: 099005 24255</p>
+          </div>
+
           <div style="text-align: center; margin-bottom: 30px;">
             <h1 style="margin: 0; font-size: 28px; font-weight: bold;">Salary Payslip</h1>
             <p style="margin: 10px 0; color: #666; font-size: 14px;">Month: ${salaryRecord.month}</p>
