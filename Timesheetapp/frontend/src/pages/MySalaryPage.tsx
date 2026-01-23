@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { DollarSign, ChevronLeft, ChevronRight, CheckCircle, AlertCircle, Loader2, Download, FileDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiClient, salaryProcessingService } from '@/services/api';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 interface BasicSalary {
   id: number;
@@ -100,122 +102,127 @@ const MySalaryPage = () => {
 
   const monthName = currentDate.toLocaleDateString('en-US', { year: 'numeric' });
 
-  const downloadSalarySlip = () => {
+  const downloadSalarySlip = async () => {
     if (!salaryRecord || !currentUser) return;
 
-    // Create HTML content for the payslip
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Salary Payslip - ${salaryRecord.month}</title>
-        <style>
-          body { font-family: Arial, sans-serif; margin: 20px; }
-          .container { max-width: 800px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; }
-          .header { text-align: center; margin-bottom: 30px; }
-          .header h1 { margin: 0; font-size: 24px; }
-          .header p { margin: 5px 0; color: #666; }
-          .employee-info { margin-bottom: 20px; }
-          .info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
-          .info-label { font-weight: bold; }
-          .breakdown { margin: 20px 0; }
-          .breakdown-title { font-weight: bold; font-size: 16px; margin-bottom: 10px; }
-          .breakdown-row { display: flex; justify-content: space-between; padding: 8px 0; }
-          .breakdown-row.total { border-top: 2px solid #000; border-bottom: 2px solid #000; font-weight: bold; font-size: 18px; padding: 10px 0; }
-          .status-badge { display: inline-block; padding: 5px 10px; border-radius: 4px; }
-          .status-processed { background-color: #d1fae5; color: #065f46; }
-          .status-hold { background-color: #fef3c7; color: #92400e; }
-          .footer { margin-top: 30px; text-align: center; color: #666; font-size: 12px; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>Salary Payslip</h1>
-            <p>Month: ${salaryRecord.month}</p>
+    try {
+      // Create a temporary container for rendering
+      const element = document.createElement('div');
+      element.style.padding = '40px';
+      element.style.backgroundColor = '#ffffff';
+      element.style.fontFamily = 'Arial, sans-serif';
+      element.style.maxWidth = '800px';
+
+      // Create HTML structure
+      element.innerHTML = `
+        <div style="border: 1px solid #ddd; padding: 30px; background: white;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="margin: 0; font-size: 28px; font-weight: bold;">Salary Payslip</h1>
+            <p style="margin: 10px 0; color: #666; font-size: 14px;">Month: ${salaryRecord.month}</p>
           </div>
 
-          <div class="employee-info">
-            <div class="info-row">
-              <span class="info-label">Employee Name:</span>
+          <div style="margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee;">
+              <span style="font-weight: bold;">Employee Name:</span>
               <span>${currentUser.name}</span>
             </div>
-            <div class="info-row">
-              <span class="info-label">Email:</span>
+            <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee;">
+              <span style="font-weight: bold;">Email:</span>
               <span>${currentUser.email}</span>
             </div>
-            <div class="info-row">
-              <span class="info-label">Role:</span>
+            <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee;">
+              <span style="font-weight: bold;">Role:</span>
               <span>${currentUser.role}</span>
             </div>
-            <div class="info-row">
-              <span class="info-label">Status:</span>
-              <span class="status-badge ${salaryRecord.status === 'PROCESSED' ? 'status-processed' : 'status-hold'}">
-                ${salaryRecord.status}
-              </span>
+            <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee;">
+              <span style="font-weight: bold;">Status:</span>
+              <span style="display: inline-block; padding: 5px 10px; border-radius: 4px; background-color: ${salaryRecord.status === 'PROCESSED' ? '#d1fae5' : '#fef3c7'}; color: ${salaryRecord.status === 'PROCESSED' ? '#065f46' : '#92400e'};">${salaryRecord.status}</span>
             </div>
           </div>
 
-          <div class="breakdown">
-            <div class="breakdown-title">Salary Breakdown</div>
-            <div class="breakdown-row">
+          <div style="margin: 30px 0;">
+            <div style="font-weight: bold; font-size: 16px; margin-bottom: 15px; border-bottom: 2px solid #333; padding-bottom: 10px;">Salary Breakdown</div>
+            <div style="display: flex; justify-content: space-between; padding: 10px 0;">
               <span>Basic Salary</span>
               <span>₹${salaryRecord.basicSalary.toLocaleString('en-IN')}</span>
             </div>
-            <div class="breakdown-row">
+            <div style="display: flex; justify-content: space-between; padding: 10px 0;">
               <span>Working Days</span>
               <span>${salaryRecord.workingDays}</span>
             </div>
-            <div class="breakdown-row">
+            <div style="display: flex; justify-content: space-between; padding: 10px 0;">
               <span>Per Day Salary</span>
               <span>₹${Math.round(salaryRecord.basicSalary / salaryRecord.workingDays).toLocaleString('en-IN')}</span>
             </div>
-            <div class="breakdown-row">
+            <div style="display: flex; justify-content: space-between; padding: 10px 0;">
               <span>Total Leaves Taken</span>
               <span>${salaryRecord.totalLeaves} days</span>
             </div>
-            <div class="breakdown-row">
+            <div style="display: flex; justify-content: space-between; padding: 10px 0;">
               <span>Paid Leaves</span>
               <span>${salaryRecord.paidLeavesAllowed} days</span>
             </div>
-            <div class="breakdown-row">
+            <div style="display: flex; justify-content: space-between; padding: 10px 0;">
               <span>Unpaid Leaves (Loss of Pay)</span>
               <span>${salaryRecord.unpaidLeaves} days</span>
             </div>
-            <div class="breakdown-row">
+            <div style="display: flex; justify-content: space-between; padding: 10px 0; color: #d32f2f;">
               <span>Deduction (Unpaid Leaves)</span>
               <span>-₹${salaryRecord.deduction.toLocaleString('en-IN')}</span>
             </div>
-            <div class="breakdown-row total">
+            <div style="display: flex; justify-content: space-between; padding: 15px 0; border-top: 2px solid #000; border-bottom: 2px solid #000; font-weight: bold; font-size: 16px;">
               <span>Final Monthly Salary</span>
               <span>₹${salaryRecord.finalSalary.toLocaleString('en-IN')}</span>
             </div>
           </div>
 
-          <div class="footer">
-            <p>Generated on: ${new Date().toLocaleDateString('en-IN')}</p>
-            <p>This is an auto-generated salary payslip. Please do not modify.</p>
+          <div style="margin-top: 40px; text-align: center; color: #666; font-size: 12px;">
+            <p style="margin: 5px 0;">Generated on: ${new Date().toLocaleDateString('en-IN')}</p>
+            <p style="margin: 5px 0;">This is an auto-generated salary payslip. Please do not modify.</p>
           </div>
         </div>
-      </body>
-      </html>
-    `;
+      `;
 
-    // Create blob and download
-    const blob = new Blob([htmlContent], { type: 'text/html' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `Salary_Payslip_${currentUser.name}_${salaryRecord.month}.html`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
+      document.body.appendChild(element);
 
-    toast({
-      title: '✅ Downloaded',
-      description: 'Salary payslip downloaded successfully',
-    });
+      // Convert HTML to canvas
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        logging: false,
+      });
+
+      // Convert canvas to PDF
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pageWidth - 10;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      pdf.addImage(imgData, 'PNG', 5, 5, imgWidth, imgHeight);
+      pdf.save(`Salary_Payslip_${currentUser.name}_${salaryRecord.month}.pdf`);
+
+      // Clean up
+      document.body.removeChild(element);
+
+      toast({
+        title: '✅ Downloaded',
+        description: 'Salary payslip downloaded as PDF successfully',
+      });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: '❌ Error',
+        description: 'Failed to download salary payslip',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
