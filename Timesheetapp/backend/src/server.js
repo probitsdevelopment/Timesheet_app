@@ -39,42 +39,42 @@ app.get('/', (req, res) => {
 
 // ==================== API ROUTES ====================
 
-// Authentication routes (no /api prefix for backward compatibility)
-app.post('/register', require('./middleware/securityMiddleware').registerLimiter, require('./controllers/authController').register);
-app.post('/login', require('./middleware/securityMiddleware').loginLimiter, require('./controllers/authController').login);
-app.get('/me', require('./middleware/authMiddleware').verifyToken, require('./controllers/authController').getCurrentUser);
+// Authentication routes
+app.post('/api/register', require('./middleware/securityMiddleware').registerLimiter, require('./controllers/authController').register);
+app.post('/api/login', require('./middleware/securityMiddleware').loginLimiter, require('./controllers/authController').login);
+app.get('/api/me', require('./middleware/authMiddleware').verifyToken, require('./controllers/authController').getCurrentUser);
 
 // Users routes
-app.use('/users', usersRoutes);
+app.use('/api/users', usersRoutes);
 
 // Projects routes
-app.use('/projects', projectsRoutes);
+app.use('/api/projects', projectsRoutes);
 
 // Time entries routes
-app.use('/time-entries', timeEntriesRoutes);
+app.use('/api/time-entries', timeEntriesRoutes);
 
 // Timesheets routes
-app.use('/timesheets', timesheetsRoutes);
+app.use('/api/timesheets', timesheetsRoutes);
 
 // Leaves routes
-app.use('/leaves', leavesRoutes);
+app.use('/api/leaves', leavesRoutes);
 
 // Leave allocation routes
-app.use('/leave-allocation', leaveAllocationRoutes);
+app.use('/api/leave-allocation', leaveAllocationRoutes);
 
 // Holidays routes
-app.use('/holidays', holidaysRoutes);
+app.use('/api/holidays', holidaysRoutes);
 
 // Salaries routes
-app.use('/salaries', salaryRoutes);
+app.use('/api/salaries', salaryRoutes);
 
 // Salary processing routes
-app.use('/salary-processing', salaryProcessingRoutes);
+app.use('/api/salary-processing', salaryProcessingRoutes);
 
-// Legacy route support for /my-time-entries
+// Legacy route support for /api/my-time-entries
 const { getUserTimeEntries } = require('./controllers/timeEntriesController');
 const { verifyToken } = require('./middleware/authMiddleware');
-app.get('/my-time-entries', verifyToken, getUserTimeEntries);
+app.get('/api/my-time-entries', verifyToken, getUserTimeEntries);
 
 // ==================== ERROR HANDLING ====================
 
