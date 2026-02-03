@@ -62,7 +62,6 @@ const UsersPage = () => {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<AppUser['role']>('employee');
   const [managerId, setManagerId] = useState<string>('');
-  const [numberOfHours, setNumberOfHours] = useState<string>('');
 
   // Fetch users on component mount
   useEffect(() => {
@@ -114,7 +113,6 @@ const UsersPage = () => {
         password,
         role,
         managerId: managerId || null,
-        numberOfHours: numberOfHours ? parseInt(numberOfHours) : null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
@@ -217,7 +215,6 @@ const UsersPage = () => {
     setPassword('');
     setRole('employee');
     setManagerId('');
-    setNumberOfHours('');
   };
 
   const getRoleBadge = (role: AppUser['role']) => {
@@ -287,17 +284,6 @@ const UsersPage = () => {
                   placeholder="Enter password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="h-9"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="numberOfHours" className="text-sm">Number of Hours</Label>
-                <Input
-                  id="numberOfHours"
-                  type="number"
-                  placeholder="Enter hours"
-                  value={numberOfHours}
-                  onChange={(e) => setNumberOfHours(e.target.value)}
                   className="h-9"
                 />
               </div>
