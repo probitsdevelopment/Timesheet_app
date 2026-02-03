@@ -14,7 +14,7 @@ const getLeaveBalance = async (req, res) => {
 
     // Get allocated days for this user
     const allocatedResult = await db.query(
-      `SELECT SUM(total_days) as total_allocated
+      `SELECT SUM(allocated_days) as total_allocated
        FROM leave_allocation
        WHERE user_id = $1 AND year = $2`,
       [userId, currentYear]
@@ -37,19 +37,19 @@ const getLeaveBalance = async (req, res) => {
     const typeBreakdownResult = await db.query(
       `SELECT 
          la.leave_type,
-         la.total_days,
+         la.allocated_days,
          COALESCE(SUM(l.number_of_days), 0) as used_days,
-         la.total_days - COALESCE(SUM(l.number_of_days), 0) as remaining_days
+         la.allocated_days - COALESCE(SUM(l.number_of_days), 0) as remaining_days
        FROM leave_allocation la
        LEFT JOIN leaves l ON la.user_id = l.user_id AND la.leave_type = l.leave_type AND l.status = 'approved'
        WHERE la.user_id = $1 AND la.year = $2
-       GROUP BY la.leave_type, la.total_days`,
+       GROUP BY la.leave_type, la.allocated_days`,
       [userId, currentYear]
     );
 
     const byType = typeBreakdownResult.rows.reduce((acc, row) => {
       acc[row.leave_type] = {
-        allocated: row.total_days,
+        allocated: row.allocated_days,
         used: parseInt(row.used_days),
         remaining: parseInt(row.remaining_days),
       };
@@ -83,7 +83,7 @@ const getAllAllocations = async (req, res) => {
          u.name,
          u.email,
          la.leave_type,
-         la.total_days,
+         la.allocated_days,
          la.year,
          la.created_at
        FROM leave_allocation la
@@ -110,10 +110,10 @@ const updateAllocation = async (req, res) => {
     console.log(`✏️ Updating allocation: user ${userId}, ${leaveType}, ${allocatedDays} days`);
 
     const result = await db.query(
-      `INSERT INTO leave_allocation (user_id, leave_type, total_days, year)
+      `INSERT INTO leave_allocation (user_id, leave_type, allocated_days, year)
        VALUES ($1, $2, $3, $4)
        ON CONFLICT (user_id, leave_type, year) 
-       DO UPDATE SET total_days = $3, updated_at = CURRENT_TIMESTAMP
+       DO UPDATE SET allocated_days = $3, updated_at = CURRENT_TIMESTAMP
        RETURNING *`,
       [userId, leaveType, allocatedDays, year || new Date().getFullYear()]
     );
@@ -182,10 +182,10 @@ const bulkAllocateLeaves = async (req, res) => {
     let allocatedCount = 0;
     for (const userId of userIds) {
       const result = await db.query(
-        `INSERT INTO leave_allocation (user_id, leave_type, total_days, year)
+        `INSERT INTO leave_allocation (user_id, leave_type, allocated_days, year)
          VALUES ($1, $2, $3, $4)
          ON CONFLICT (user_id, leave_type, year) 
-         DO UPDATE SET total_days = $3, updated_at = CURRENT_TIMESTAMP
+         DO UPDATE SET allocated_days = $3, updated_at = CURRENT_TIMESTAMP
          RETURNING id`,
         [userId, leaveType, allocatedDays, currentYear]
       );
