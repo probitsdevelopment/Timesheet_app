@@ -104,23 +104,24 @@ const processSalary = async (req, res) => {
     // Step 8: Save to salary_processing table
     const result = await db.query(
       `INSERT INTO salary_processing 
-       (user_id, month, basic_salary, working_days, total_leaves, unpaid_leaves, 
+       (user_id, month, year, basic_salary, working_days, total_leaves, unpaid_leaves, 
         deduction, final_salary, timesheet_approved, status, processed_by, organization)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
        ON CONFLICT (user_id, month) 
        DO UPDATE SET 
-         basic_salary = $3,
-         working_days = $4,
-         total_leaves = $5,
-         unpaid_leaves = $6,
-         deduction = $7,
-         final_salary = $8,
-         timesheet_approved = $9,
-         status = $10,
-         processed_by = $11,
+         year = $3,
+         basic_salary = $4,
+         working_days = $5,
+         total_leaves = $6,
+         unpaid_leaves = $7,
+         deduction = $8,
+         final_salary = $9,
+         timesheet_approved = $10,
+         status = $11,
+         processed_by = $12,
          processed_at = CURRENT_TIMESTAMP
        RETURNING *`,
-      [userId, month, basicSalary, workingDays, totalLeaves, unpaidLeaves, 
+      [userId, month, year, basicSalary, workingDays, totalLeaves, unpaidLeaves, 
        deduction, finalSalary, timesheetApproved, status, processedBy, organization]
     );
 
