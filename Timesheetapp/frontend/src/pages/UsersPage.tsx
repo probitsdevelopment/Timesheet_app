@@ -112,11 +112,17 @@ const UsersPage = () => {
         email,
         password,
         role,
-        managerId: managerId || null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
       console.log(' User created:', newUser);
+
+      // Assign manager if selected
+      if (managerId) {
+        console.log(' Assigning manager to new user...');
+        await userService.assignManager(newUser.id, managerId);
+        console.log(' Manager assigned to new user');
+      }
 
       // Fetch updated users list
       console.log(' Fetching updated users from API...');
