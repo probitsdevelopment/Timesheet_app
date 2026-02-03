@@ -1,0 +1,9 @@
+services:
+  - type: static
+    name: timesheet-frontend
+    buildCommand: cd Timesheetapp/frontend && npm install && npm run build
+    staticPublishPath: Timesheetapp/frontend/dist
+    routes:
+      - path: /*
+        method: GET
+        destination: /index.html
