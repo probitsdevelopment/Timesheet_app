@@ -92,7 +92,11 @@ const DashboardLayout = () => {
     navigate(item.path);
   };
 
-  if (!isAuthenticated) {
+  // Check if token exists in localStorage (for page refresh scenarios)
+  const hasToken = localStorage.getItem('authToken');
+  
+  if (!isAuthenticated && !hasToken) {
+    navigate('/auth');
     return null;
   }
 
