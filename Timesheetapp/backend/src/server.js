@@ -40,41 +40,40 @@ app.get('/', (req, res) => {
 // ==================== API ROUTES ====================
 
 // Authentication routes
-app.post('/api/register', require('./middleware/securityMiddleware').registerLimiter, require('./controllers/authController').register);
-app.post('/api/login', require('./middleware/securityMiddleware').loginLimiter, require('./controllers/authController').login);
-app.get('/api/me', require('./middleware/authMiddleware').verifyToken, require('./controllers/authController').getCurrentUser);
+app.post('/register', require('./middleware/securityMiddleware').registerLimiter, require('./controllers/authController').register);
+app.post('/login', require('./middleware/securityMiddleware').loginLimiter, require('./controllers/authController').login);
+app.get('/me', require('./middleware/authMiddleware').verifyToken, require('./controllers/authController').getCurrentUser);
 
 // Users routes
-app.use('/api/users', usersRoutes);
+app.use('/users', usersRoutes);
 
 // Projects routes
-app.use('/api/projects', projectsRoutes);
+app.use('/projects', projectsRoutes);
 
 // Time entries routes
-app.use('/api/time-entries', timeEntriesRoutes);
+app.use('/time-entries', timeEntriesRoutes);
 
 // Timesheets routes
-app.use('/api/timesheets', timesheetsRoutes);
+app.use('/timesheets', timesheetsRoutes);
 
 // Leaves routes
-app.use('/api/leaves', leavesRoutes);
-
+app.use('/leaves', leavesRoutes);
 // Leave allocation routes
-app.use('/api/leave-allocation', leaveAllocationRoutes);
+app.use('/leave-allocation', leaveAllocationRoutes);
 
 // Holidays routes
-app.use('/api/holidays', holidaysRoutes);
+app.use('/holidays', holidaysRoutes);
 
 // Salaries routes
-app.use('/api/salaries', salaryRoutes);
+app.use('/salaries', salaryRoutes);
 
 // Salary processing routes
-app.use('/api/salary-processing', salaryProcessingRoutes);
+app.use('/salary-processing', salaryProcessingRoutes);
 
 // Legacy route support for /api/my-time-entries
 const { getUserTimeEntries } = require('./controllers/timeEntriesController');
 const { verifyToken } = require('./middleware/authMiddleware');
-app.get('/api/my-time-entries', verifyToken, getUserTimeEntries);
+app.get('/my-time-entries', verifyToken, getUserTimeEntries);
 
 // ==================== ERROR HANDLING ====================
 
@@ -87,12 +86,13 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "Internal server error" });
 });
 
-// ==================== SERVER START ====================
+
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`\n✅ Express server running on http://localhost:${PORT}`);
   console.log(`🗄️  PostgreSQL configured`);
-  console.log(`🔒 JWT Secret configured: ${process.env.JWT_SECRET ? "YES" : "NO"}\n`);
+  console.log(`🔒 JWT Secret configured: ${process.env.JWT_SECRET ? "YES" : "NO"}`);
+  console.log(`📦 API Version: 1.0.0 - Timesheet Application\n`);
 });
 
 module.exports = app;
