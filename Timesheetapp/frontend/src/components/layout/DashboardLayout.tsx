@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { logout } from '@/store/reducers/authReducer';
@@ -47,15 +47,34 @@ const DashboardLayout = () => {
   const { toast } = useToast();
   const { isAuthenticated, currentUser } = useAppSelector((state) => state.auth);
   const { isCollapsed, activeSection } = useAppSelector((state) => state.sidebar);
+  const [isInitialized, setIsInitialized] = useState(false);
 
+  // ✅ STEP 1: Check token on mount (single source of truth)
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/auth');
+    const token = localStorage.getItem('authToken');
+    
+    if (!token) {
+      // No token = redirect to auth
+      navigate('/auth', { replace: true });
+    } else {
+      // Token exists = mark as initialized, let Redux rehydrate
+      setIsInitialized(true);
     }
-  }, [isAuthenticated, navigate]);
+  }, [navigate]);
+
+  // ✅ STEP 2: Watch Redux state after initialization
+  useEffect(() => {
+    if (!isInitialized) return;
+    
+    if (!isAuthenticated) {
+      navigate('/auth', { replace: true });
+    }
+  }, [isAuthenticated, isInitialized, navigate]);
 
   // Load projects from API on mount
   useEffect(() => {
+    if (!isInitialized) return;
+
     const loadProjects = async () => {
       try {
         console.log('📦 Loading projects from API...');
@@ -67,7 +86,7 @@ const DashboardLayout = () => {
       }
     };
     loadProjects();
-  }, [dispatch]);
+  }, [isInitialized, dispatch]);
 
   useEffect(() => {
     const currentPath = location.pathname;
@@ -95,9 +114,16 @@ const DashboardLayout = () => {
   // Check if token exists in localStorage (for page refresh scenarios)
   const hasToken = localStorage.getItem('authToken');
   
-  if (!isAuthenticated && !hasToken) {
-    navigate('/auth');
-    return null;
+  // ✅ STEP 3: Show loading state while initializing (NO white screen!)
+  if (!isInitialized || (!isAuthenticated && hasToken)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Initializing...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
