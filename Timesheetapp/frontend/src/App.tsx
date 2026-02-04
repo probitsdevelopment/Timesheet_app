@@ -22,8 +22,17 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode;
   const { currentUser } = useAppSelector((state) => state.auth);
   const navigate = useNavigate();
 
+  // Check token in localStorage first (for refresh scenarios)
+  const hasToken = localStorage.getItem('authToken');
+  
+  // If there's a token but currentUser is still loading, show nothing (DashboardLayout will handle loading)
+  if (hasToken && !currentUser) {
+    return null;
+  }
+
+  // If no token or user doesn't have permission, redirect
   if (!currentUser || !allowedRoles.includes(currentUser.role)) {
-    setTimeout(() => navigate("/dashboard/timesheets"), 0);
+    setTimeout(() => navigate("/dashboard/timesheets", { replace: true }), 0);
     return null;
   }
 
