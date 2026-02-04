@@ -115,7 +115,7 @@ const DashboardLayout = () => {
   const hasToken = localStorage.getItem('authToken');
   
   // ✅ STEP 3: Show loading state while initializing (NO white screen!)
-  if (!isInitialized || (!isAuthenticated && hasToken)) {
+  if (!isInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
