@@ -20,20 +20,15 @@ const queryClient = new QueryClient();
 // Protected Route for role-based access
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode; allowedRoles: string[] }) => {
   const { currentUser } = useAppSelector((state) => state.auth);
-  const navigate = useNavigate();
 
-  // Check token in localStorage first (for refresh scenarios)
-  const hasToken = localStorage.getItem('authToken');
-  
-  // If there's a token but currentUser is still loading, show nothing (DashboardLayout will handle loading)
-  if (hasToken && !currentUser) {
-    return null;
+  // Wait for currentUser to load
+  if (!currentUser) {
+    return null;  // DashboardLayout will show loading spinner
   }
 
-  // If no token or user doesn't have permission, redirect
-  if (!currentUser || !allowedRoles.includes(currentUser.role)) {
-    setTimeout(() => navigate("/dashboard/timesheets", { replace: true }), 0);
-    return null;
+  // Check if user has permission
+  if (!allowedRoles.includes(currentUser.role)) {
+    return <Navigate to="/dashboard/timesheets" replace />;
   }
 
   return <>{children}</>;
