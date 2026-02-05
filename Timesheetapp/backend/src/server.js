@@ -37,6 +37,15 @@ app.get('/', (req, res) => {
   res.json({ message: "Express server is running", port: PORT });
 });
 
+// ==================== CRITICAL: Handle ALL OPTIONS requests (preflight) ====================
+app.options('*', (req, res) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.set('Access-Control-Max-Age', '3600');
+  res.sendStatus(200);
+});
+
 // ==================== API ROUTES ====================
 
 // CORS middleware for all routes
