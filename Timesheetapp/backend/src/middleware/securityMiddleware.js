@@ -2,14 +2,20 @@ const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const { RATE_LIMITS } = require('../config/constants');
 
-// CORS Configuration - Allow all origins in production
-const corsConfig = {
-  origin: true, // Allow all origins
+// CORS Configuration
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow all origins
+    callback(null, true);
+  },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization"],
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  preflightContinue: false
 };
+
+const corsConfig = corsOptions;
 
 // Security Headers Middleware
 const securityHeaders = (req, res, next) => {
