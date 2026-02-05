@@ -41,6 +41,7 @@ interface FormEntry {
   project_id: string;
   projectName: string;
   description: string;
+  work_location: 'office' | 'work_from_home';
 }
 
 const AddEntryModal = () => {
@@ -79,6 +80,7 @@ const AddEntryModal = () => {
     project_id: '',
     projectName: '',
     description: '',
+    work_location: 'office',
   });
 
   const [date, setDate] = useState(selectedDate || new Date().toISOString().split('T')[0]);
@@ -169,6 +171,7 @@ const AddEntryModal = () => {
       project_id: '',
       projectName: '',
       description: '',
+      work_location: 'office',
     });
   };
 
@@ -199,6 +202,7 @@ const AddEntryModal = () => {
           reason: `${entry.taskStart}-${entry.taskEnd}`,
           status: 'pending',
           created_at: new Date().toISOString(),
+          work_location: entry.work_location,
         };
 
         const backendData = {
@@ -210,6 +214,7 @@ const AddEntryModal = () => {
           description: entry.description,
           reason: 'Development',
           status: 'pending',
+          work_location: entry.work_location,
         };
 
         const response = await timesheetService.create(backendData);
@@ -243,6 +248,7 @@ const AddEntryModal = () => {
       project_id: '',
       projectName: '',
       description: '',
+      work_location: 'office',
     });
   };
 
@@ -341,6 +347,22 @@ const AddEntryModal = () => {
               </div>
             </div>
 
+            {/* Work Location */}
+            <div className="space-y-2">
+              <Label htmlFor="work-location" className="text-sm font-medium">
+                Work Location <span className="text-red-500">*</span>
+              </Label>
+              <Select value={formData.work_location} onValueChange={(value) => setFormData((prev) => ({ ...prev, work_location: value as 'office' | 'work_from_home' }))}>
+                <SelectTrigger id="work-location">
+                  <SelectValue placeholder="Select work location" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="office">🏢 Office</SelectItem>
+                  <SelectItem value="work_from_home">🏠 Work from Home</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Description */}
             <div className="space-y-2">
               <Label htmlFor="description" className="text-sm font-medium">
@@ -388,6 +410,7 @@ const AddEntryModal = () => {
                     <TableRow className="bg-gray-100">
                       <TableHead className="font-semibold">Time</TableHead>
                       <TableHead className="font-semibold">Project</TableHead>
+                      <TableHead className="font-semibold">Work Location</TableHead>
                       <TableHead className="font-semibold">Description</TableHead>
                       <TableHead className="font-semibold text-right">Hours</TableHead>
                       <TableHead className="font-semibold text-center">Action</TableHead>
@@ -400,6 +423,15 @@ const AddEntryModal = () => {
                           {entry.taskStart} - {entry.taskEnd}
                         </TableCell>
                         <TableCell>{entry.projectName}</TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded-full text-sm font-medium ${
+                            entry.work_location === 'office'
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-green-100 text-green-800'
+                          }`}>
+                            {entry.work_location === 'office' ? '🏢 Office' : '🏠 Work from Home'}
+                          </span>
+                        </TableCell>
                         <TableCell>{entry.description}</TableCell>
                         <TableCell className="text-right font-semibold">{entry.hours}h</TableCell>
                         <TableCell className="text-center">

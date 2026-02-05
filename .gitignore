@@ -8,7 +8,11 @@ bun.lockb
 .env
 .env.local
 .env.*.local
-
+Timesheetapp/backend/.env
+Timesheetapp/backend/.env.example
+Timesheetapp/frontend/.env
+Timesheetapp/frontend/.env.example
+ 
 # Logs
 logs
 *.log

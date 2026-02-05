@@ -21,6 +21,8 @@ import {
   submitTimesheet,
 } from '@/store/reducers/timeSheetReducer';
 import AddEntryModal from '@/components/AddEntryModal';
+import LocationFilter from '@/components/LocationFilter';
+import LocationStats from '@/components/LocationStats';
 import { timesheetService, timesheetSubmissionService, leaveService, leaveAllocationService } from '@/services/api';
 
 const TimeSheetsPage = () => {
@@ -40,6 +42,7 @@ const TimeSheetsPage = () => {
   const [balanceLoading, setBalanceLoading] = useState(false);
   const [requestedDays, setRequestedDays] = useState<number>(0);
   const [isLossOfPayLeave, setIsLossOfPayLeave] = useState(false);
+  const [locationFilter, setLocationFilter] = useState<'all' | 'office' | 'work_from_home'>('all');
 
   // Get days in month
   const getDaysInMonth = (dateString: string) => {
@@ -287,6 +290,9 @@ const TimeSheetsPage = () => {
         ))}
       </div>
 
+      {/* Work Location Statistics */}
+      <LocationStats entries={entries} />
+
       {/* Calendar View */}
       <Card className="border-0 shadow-md">
         <CardHeader>
@@ -321,6 +327,10 @@ const TimeSheetsPage = () => {
                 const dayEntries = monthEntries.filter((e) => e.date === dateStr);
                 const dayHours = Math.round(dayEntries.reduce((sum, e) => sum + parseFloat(e.hours?.toString() || '0'), 0) * 10) / 10;
                 const isSelected = selectedDateLocal === dateStr;
+                
+                // Get work location indicators for this day
+                const hasOffice = dayEntries.some((e) => e.work_location === 'office');
+                const hasWFH = dayEntries.some((e) => e.work_location === 'work_from_home');
 
                 // Check if this date has approved leave
                 const isLeaveTaken = approvedLeaves.some((leave) => {
@@ -358,61 +368,19 @@ const TimeSheetsPage = () => {
                       <div className="text-xs text-blue-600 font-medium">Leave</div>
                     )}
                     {!isLeaveTaken && dayHours > 0 && (
-                      <div className="text-xs text-blue-600 font-medium">{dayHours}h</div>
+                      <div>
+                        <div className="text-xs text-blue-600 font-medium">{dayHours}h</div>
+                        <div className="text-xs mt-1 flex gap-1">
+                          {hasOffice && <span>🏢</span>}
+                          {hasWFH && <span>🏠</span>}
+                        </div>
+                      </div>
                     )}
                   </button>
                 );
               })}
             </div>
           </div>
-
-          {/* Selected Date Details */}
-          {selectedDateLocal && (
-            <div className="mt-6 pt-6 border-t">
-              <div className="mb-4">
-                <h3 className="font-semibold text-lg mb-2">
-                  {new Date(selectedDateLocal).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                </h3>
-                {monthEntries
-                  .filter((e) => e.date === selectedDateLocal)
-                  .map((entry) => (
-                    <div key={entry.id} className="p-3 bg-accent/5 rounded-lg mb-2 flex justify-between items-start">
-                      <div className="flex-1">
-                        <p className="font-medium capitalize">{entry.reason.replace('-', ' ')}</p>
-                        <p className="text-sm text-muted-foreground">{entry.description}</p>
-                        <p className="text-xs text-muted-foreground mt-1">{parseFloat(entry.hours?.toString() || '0').toFixed(2)}h</p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={async () => {
-                          try {
-                            await timesheetService.delete(entry.id);
-                            dispatch(deleteEntry(entry.id));
-                            toast({
-                              title: 'Success',
-                              description: 'Entry deleted successfully',
-                            });
-                          } catch (error) {
-                            toast({
-                              title: 'Error',
-                              description: 'Failed to delete entry',
-                              variant: 'destructive',
-                            });
-                            console.error(error);
-                          }
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ))}
-                {monthEntries.filter((e) => e.date === selectedDateLocal).length === 0 && (
-                  <p className="text-sm text-muted-foreground">No entries for this date</p>
-                )}
-              </div>
-            </div>
-          )}
         </CardContent>
       </Card>
 

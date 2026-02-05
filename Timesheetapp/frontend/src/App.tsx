@@ -21,9 +21,16 @@ const queryClient = new QueryClient();
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode; allowedRoles: string[] }) => {
   const { currentUser } = useAppSelector((state) => state.auth);
 
-  // Wait for currentUser to load
+  // Wait for currentUser to load - show loading UI
   if (!currentUser) {
-    return null;  // DashboardLayout will show loading spinner
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-500">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
   // Check if user has permission

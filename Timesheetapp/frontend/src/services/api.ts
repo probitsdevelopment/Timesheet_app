@@ -108,11 +108,18 @@ export const projectService = {
 
 // Time Entry Service
 export const timesheetService = {
-  getAll: () => apiClient.get('/my-time-entries'),
+  getAll: (workLocation?: string) => {
+    // ✅ NEW: Support filtering by work location
+    const query = workLocation ? `?workLocation=${workLocation}` : '';
+    return apiClient.get(`/my-time-entries${query}`);
+  },
   getById: (id: string) => apiClient.get(`/time-entries/${id}`),
   create: (entry: any) => apiClient.post('/time-entries', entry),
   update: (id: string, entry: any) => apiClient.put(`/time-entries/${id}`, entry),
   delete: (id: string) => apiClient.delete(`/time-entries/${id}`),
+  // ✅ NEW: Get entries filtered by work location
+  getByLocation: (workLocation: 'office' | 'work_from_home') => 
+    apiClient.get(`/my-time-entries?workLocation=${workLocation}`),
 };
 
 // Timesheet Service (Monthly grouping)

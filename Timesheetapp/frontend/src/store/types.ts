@@ -74,6 +74,7 @@ export interface TimeEntry {
   description: string;
   reason: string;
   status: string;
+  work_location?: 'office' | 'work_from_home';  // ✅ NEW: Work location
   organization?: string;
   created_at: string;
 }

@@ -557,42 +557,6 @@ const ApprovalsPage = () => {
                 </div>
               </div>
 
-              {/* Entries List */}
-              <div className="border-t pt-4">
-                <h3 className="font-semibold mb-3">Time Entries</h3>
-                {timesheetEntries.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No entries for this month</p>
-                ) : (
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {timesheetEntries.map((entry) => (
-                      <div key={entry.id} className="p-3 bg-accent/5 rounded-lg">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="font-medium text-sm">
-                              {new Date(entry.date + 'T00:00').toLocaleDateString('en-US', { 
-                                weekday: 'short', 
-                                month: 'short', 
-                                day: 'numeric' 
-                              })}
-                            </p>
-                            <p className="text-sm capitalize">{entry.reason.replace('-', ' ')}</p>
-                            <p className="text-xs text-muted-foreground">{entry.description}</p>
-                            {entry.task_start && entry.task_end && (
-                              <p className="text-xs text-muted-foreground">
-                                {entry.task_start} - {entry.task_end}
-                              </p>
-                            )}
-                          </div>
-                          <div className="text-right">
-                            <p className="font-semibold">{parseFloat(entry.hours?.toString() || '0').toFixed(2)}h</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
               {/* Summary */}
               <div className="border-t pt-4">
                 <div className="grid grid-cols-2 gap-4">

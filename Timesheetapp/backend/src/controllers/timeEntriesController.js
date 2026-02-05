@@ -6,12 +6,22 @@ const { DEFAULT_ORGANIZATION } = require('../config/constants');
 const getAllTimeEntries = async (req, res) => {
   try {
     const organization = req.user.organization || DEFAULT_ORGANIZATION;
-    console.log(`🔍 DEBUG: Fetching entries for user_id=${req.user.userId}, organization=${organization}`);
+    const { workLocation } = req.query;  // ✅ NEW: Accept location filter
     
-    const entries = await db.getAll(
-      "SELECT id, user_id, project_id, TO_CHAR(date, 'YYYY-MM-DD') as date, task_start, task_end, CAST(hours AS DECIMAL) as hours, description, reason, status, created_at, organization FROM time_entries WHERE user_id = $1 AND organization = $2 ORDER BY date DESC",
-      [req.user.userId, organization]
-    );
+    console.log(`🔍 DEBUG: Fetching entries for user_id=${req.user.userId}, organization=${organization}, workLocation=${workLocation}`);
+    
+    let query = "SELECT id, user_id, project_id, TO_CHAR(date, 'YYYY-MM-DD') as date, task_start, task_end, CAST(hours AS DECIMAL) as hours, description, reason, status, work_location, created_at, organization FROM time_entries WHERE user_id = $1 AND organization = $2";
+    let params = [req.user.userId, organization];
+
+    // ✅ NEW: Add location filter if provided
+    if (workLocation && ['office', 'work_from_home'].includes(workLocation)) {
+      query += " AND work_location = $3";
+      params.push(workLocation);
+    }
+
+    query += " ORDER BY date DESC";
+    
+    const entries = await db.getAll(query, params);
 
     // Ensure hours is a number
     const formattedEntries = entries.map(entry => ({
@@ -34,7 +44,7 @@ const getUserTimeEntries = async (req, res) => {
   try {
     const organization = req.user.organization || DEFAULT_ORGANIZATION;
     const entries = await db.getAll(
-      "SELECT id, user_id, project_id, TO_CHAR(date, 'YYYY-MM-DD') as date, task_start, task_end, CAST(hours AS DECIMAL) as hours, description, reason, status, created_at, organization FROM time_entries WHERE user_id = $1 AND organization = $2 ORDER BY date DESC",
+      "SELECT id, user_id, project_id, TO_CHAR(date, 'YYYY-MM-DD') as date, task_start, task_end, CAST(hours AS DECIMAL) as hours, description, reason, status, work_location, created_at, organization FROM time_entries WHERE user_id = $1 AND organization = $2 ORDER BY date DESC",
       [req.user.userId, organization]
     );
 
@@ -56,23 +66,29 @@ const getUserTimeEntries = async (req, res) => {
 // Create time entry
 const createTimeEntry = async (req, res) => {
   try {
-    const { project_id, date, hours, description, reason, status, task_start, task_end } = req.body;
+    const { project_id, date, hours, description, reason, status, task_start, task_end, work_location } = req.body;
 
     if (!project_id || !date || !hours) {
       return res.status(400).json({ error: "Project, date, and hours are required" });
     }
 
-    console.log(`📝 Creating entry - Date received: ${date}, Type: ${typeof date}`);
+    // ✅ NEW: Validate work_location
+    const validLocation = work_location || 'office';
+    if (!['office', 'work_from_home'].includes(validLocation)) {
+      return res.status(400).json({ error: "Invalid work location. Must be 'office' or 'work_from_home'" });
+    }
+
+    console.log(`📝 Creating entry - Date received: ${date}, Type: ${typeof date}, Location: ${validLocation}`);
 
     const result = await db.query(
-      "INSERT INTO time_entries (user_id, project_id, date, task_start, task_end, hours, description, reason, status, organization) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *",
-      [req.user.userId, project_id, date, task_start || null, task_end || null, hours, description || "", reason || "Development", status || "pending", req.user.organization]
+      "INSERT INTO time_entries (user_id, project_id, date, task_start, task_end, hours, description, reason, status, work_location, organization) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *",
+      [req.user.userId, project_id, date, task_start || null, task_end || null, hours, description || "", reason || "Development", status || "pending", validLocation, req.user.organization]
     );
 
     const entry = result.rows[0];
-    console.log(`✅ Entry created - Date in DB: ${entry.date}`);
+    console.log(`✅ Entry created - Date in DB: ${entry.date}, Location: ${entry.work_location}`);
 
-    logSecurityEvent("TIME_ENTRY_CREATED", { entryId: entry.id, userId: req.user.userId });
+    logSecurityEvent("TIME_ENTRY_CREATED", { entryId: entry.id, userId: req.user.userId, workLocation: validLocation });
 
     res.status(201).json(entry);
   } catch (error) {
@@ -84,11 +100,16 @@ const createTimeEntry = async (req, res) => {
 // Update time entry
 const updateTimeEntry = async (req, res) => {
   try {
-    const { project_id, date, hours, description, reason, status, task_start, task_end } = req.body;
+    const { project_id, date, hours, description, reason, status, task_start, task_end, work_location } = req.body;
+
+    // ✅ NEW: Validate work_location if provided
+    if (work_location && !['office', 'work_from_home'].includes(work_location)) {
+      return res.status(400).json({ error: "Invalid work location. Must be 'office' or 'work_from_home'" });
+    }
 
     const result = await db.query(
-      "UPDATE time_entries SET project_id = $1, date = $2, task_start = $3, task_end = $4, hours = $5, description = $6, reason = $7, status = $8, updated_at = CURRENT_TIMESTAMP WHERE id = $9 AND user_id = $10 AND organization = $11 RETURNING *",
-      [project_id, date, task_start || null, task_end || null, hours, description, reason, status, req.params.id, req.user.userId, req.user.organization]
+      "UPDATE time_entries SET project_id = $1, date = $2, task_start = $3, task_end = $4, hours = $5, description = $6, reason = $7, status = $8, work_location = $9, updated_at = CURRENT_TIMESTAMP WHERE id = $10 AND user_id = $11 AND organization = $12 RETURNING *",
+      [project_id, date, task_start || null, task_end || null, hours, description, reason, status, work_location || 'office', req.params.id, req.user.userId, req.user.organization]
     );
 
     if (result.rows.length === 0) {
@@ -96,7 +117,7 @@ const updateTimeEntry = async (req, res) => {
       return res.status(404).json({ error: "Time entry not found or unauthorized" });
     }
 
-    logSecurityEvent("TIME_ENTRY_UPDATED", { entryId: req.params.id, userId: req.user.userId });
+    logSecurityEvent("TIME_ENTRY_UPDATED", { entryId: req.params.id, userId: req.user.userId, workLocation: work_location || 'office' });
 
     res.json(result.rows[0]);
   } catch (error) {
