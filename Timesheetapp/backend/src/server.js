@@ -39,10 +39,18 @@ app.get('/', (req, res) => {
 
 // ==================== API ROUTES ====================
 
-// Authentication routes
-app.post('/register', require('./middleware/securityMiddleware').registerLimiter, require('./controllers/authController').register);
-app.post('/login', require('./middleware/securityMiddleware').loginLimiter, require('./controllers/authController').login);
-app.get('/me', require('./middleware/authMiddleware').verifyToken, require('./controllers/authController').getCurrentUser);
+// CORS middleware for all routes
+const corsMiddleware = require('cors')(corsConfig);
+
+// Authentication routes - with explicit CORS
+app.options('/register', corsMiddleware);
+app.post('/register', corsMiddleware, require('./middleware/securityMiddleware').registerLimiter, require('./controllers/authController').register);
+
+app.options('/login', corsMiddleware);
+app.post('/login', corsMiddleware, require('./middleware/securityMiddleware').loginLimiter, require('./controllers/authController').login);
+
+app.options('/me', corsMiddleware);
+app.get('/me', corsMiddleware, require('./middleware/authMiddleware').verifyToken, require('./controllers/authController').getCurrentUser);
 
 // Users routes
 app.use('/users', usersRoutes);
