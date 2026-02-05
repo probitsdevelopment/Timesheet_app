@@ -2,7 +2,12 @@ const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const { RATE_LIMITS } = require('../config/constants');
 
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:8080").split(",");
+// Allow all origins in production (Railway will have different domains)
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(",") 
+  : process.env.NODE_ENV === 'production'
+  ? "*" // Allow all origins in production
+  : ["http://localhost:8080", "http://localhost:3000", "http://127.0.0.1:8080", "http://127.0.0.1:3000"];
 
 // CORS Configuration
 const corsConfig = {
