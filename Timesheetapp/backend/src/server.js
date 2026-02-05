@@ -21,8 +21,23 @@ const salaryProcessingRoutes = require('./routes/salaryProcessingRoutes');
 
 // ==================== GLOBAL MIDDLEWARE ====================
 
-// CORS
+// CORS - Must be first!
 app.use(require('cors')(corsConfig));
+
+// Preflight requests
+app.options('*', require('cors')(corsConfig));
+
+// Add CORS headers explicitly
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 // Body parsers
 app.use(express.json({ limit: "10mb" }));
