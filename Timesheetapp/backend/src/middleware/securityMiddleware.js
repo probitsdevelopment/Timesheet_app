@@ -10,7 +10,7 @@ const allowedOrigins = [
   'http://127.0.0.1:8080',
   'http://127.0.0.1:3000',
   // Production Railway
-  'https://robust-flow-production.up.railway.app',  // Frontend production
+  'https://timesheetapp-production-dc5f.up.railway.app'  // Frontend production
 ];
 
 const corsConfig = {
