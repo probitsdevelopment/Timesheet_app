@@ -33,7 +33,7 @@ export const apiClient = {
     
     console.log('📤 POST Request to:', endpoint, 'Data:', data);
     
-    const response = awaitfetch(`${API_BASE_URL}${normalizeEndpoint(endpoint)}`, {
+    const response = await fetch(`${API_BASE_URL}${normalizeEndpoint(endpoint)}`, {
       method: 'POST',
       headers,
       body: JSON.stringify(data),
