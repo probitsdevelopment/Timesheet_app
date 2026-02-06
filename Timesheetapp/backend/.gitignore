@@ -1,0 +1,9 @@
+# Backend-specific ignores
+# (Most patterns are handled by root .gitignore)
+
+# Database backups
+*.dump
+*.backup
+
+# Process files
+*.pid

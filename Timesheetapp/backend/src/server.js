@@ -22,7 +22,8 @@ const salaryProcessingRoutes = require('./routes/salaryProcessingRoutes');
 // ==================== GLOBAL MIDDLEWARE ====================
 
 // CORS - MUST be first middleware!
-app.use(require('cors')(corsConfig));
+const corsMiddleware = require('cors')(corsConfig);
+app.use(corsMiddleware);
 
 // Body parsers
 app.use(express.json({ limit: "10mb" }));
@@ -38,28 +39,16 @@ app.get('/', (req, res) => {
 });
 
 // ==================== CRITICAL: Handle ALL OPTIONS requests (preflight) ====================
-app.options('*', (req, res) => {
-  res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.set('Access-Control-Max-Age', '3600');
-  res.sendStatus(200);
-});
+app.options('*', corsMiddleware);
 
 // ==================== API ROUTES ====================
 
-// CORS middleware for all routes
-const corsMiddleware = require('cors')(corsConfig);
+// Authentication routes - now fully handled by CORS middleware
+app.post('/register', require('./middleware/securityMiddleware').registerLimiter, require('./controllers/authController').register);
 
-// Authentication routes - with explicit CORS
-app.options('/register', corsMiddleware);
-app.post('/register', corsMiddleware, require('./middleware/securityMiddleware').registerLimiter, require('./controllers/authController').register);
+app.post('/login', require('./middleware/securityMiddleware').loginLimiter, require('./controllers/authController').login);
 
-app.options('/login', corsMiddleware);
-app.post('/login', corsMiddleware, require('./middleware/securityMiddleware').loginLimiter, require('./controllers/authController').login);
-
-app.options('/me', corsMiddleware);
-app.get('/me', corsMiddleware, require('./middleware/authMiddleware').verifyToken, require('./controllers/authController').getCurrentUser);
+app.get('/me', require('./middleware/authMiddleware').verifyToken, require('./controllers/authController').getCurrentUser);
 
 // Users routes
 app.use('/users', usersRoutes);

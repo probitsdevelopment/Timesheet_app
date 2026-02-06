@@ -119,20 +119,19 @@ const ApprovalsPage = () => {
       
       // Fetch entries for the specific user (not current user)
       console.log('Fetching entries for user:', timesheet.user_id);
-      const entries = await timesheetService.getAll();
       
-      // Use the API to get specific user's entries
-      const response = await fetch(`http://localhost:3001/time-entries/user/${timesheet.user_id}`, {
+      // Use the API to get specific user's entries via apiClient
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+      const token = localStorage.getItem('authToken');
+      const userEntries = await fetch(`${API_BASE_URL}/time-entries/user/${timesheet.user_id}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
+      }).then(res => {
+        if (!res.ok) throw new Error('Failed to fetch user entries');
+        return res.json();
       });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch user entries');
-      }
-      
-      const userEntries = await response.json();
       console.log('Fetched entries for user', timesheet.user_id, ':', userEntries);
       
       // Filter entries for the selected month

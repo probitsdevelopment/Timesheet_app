@@ -8,17 +8,16 @@ bun.lockb
 .env
 .env.local
 .env.*.local
-Timesheetapp/backend/.env
-Timesheetapp/backend/.env.example
-Timesheetapp/frontend/.env
-Timesheetapp/frontend/.env.example
- 
+.env.production
+
 # Logs
 logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
 # IDE
 .vscode/
@@ -33,12 +32,18 @@ dist/
 build/
 .next/
 out/
+dist-ssr/
 
 # Runtime data
 pids/
 *.pid
 *.seed
 *.pid.lock
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
 
 # OS files
 Thumbs.db
