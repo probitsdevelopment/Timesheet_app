@@ -34,6 +34,10 @@ build/
 out/
 dist-ssr/
 
+# Backend public folder (built frontend files, not version controlled)
+Timesheetapp/backend/public/*
+!Timesheetapp/backend/public/.gitkeep
+
 # Runtime data
 pids/
 *.pid

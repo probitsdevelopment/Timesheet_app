@@ -1,5 +1,6 @@
 const express = require('express');
 require('dotenv').config();
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -43,6 +44,9 @@ app.use((req, res, next) => {
   }
   next();
 });
+
+// ✅ Serve frontend static files from public directory
+app.use(express.static(path.join(__dirname, '../public')));
 
 // ==================== HEALTH CHECK ====================
 
@@ -89,6 +93,29 @@ app.use('/salary-processing', salaryProcessingRoutes);
 const { getUserTimeEntries } = require('./controllers/timeEntriesController');
 const { verifyToken } = require('./middleware/authMiddleware');
 app.get('/my-time-entries', verifyToken, getUserTimeEntries);
+
+// ✅ SPA fallback - serve index.html for all non-API routes
+// This allows React Router to handle client-side routing
+app.get('*', (req, res) => {
+  // Only redirect if not an API call
+  if (!req.path.startsWith('/register') && 
+      !req.path.startsWith('/login') && 
+      !req.path.startsWith('/me') &&
+      !req.path.startsWith('/users') &&
+      !req.path.startsWith('/projects') &&
+      !req.path.startsWith('/time-entries') &&
+      !req.path.startsWith('/timesheets') &&
+      !req.path.startsWith('/leaves') &&
+      !req.path.startsWith('/leave-allocation') &&
+      !req.path.startsWith('/holidays') &&
+      !req.path.startsWith('/salaries') &&
+      !req.path.startsWith('/salary-processing') &&
+      !req.path.startsWith('/my-time-entries')) {
+    return res.sendFile(path.join(__dirname, '../public/index.html'));
+  }
+  // Let API routes continue to error handler
+  next();
+});
 
 // ==================== ERROR HANDLING ====================
 

@@ -120,10 +120,9 @@ const ApprovalsPage = () => {
       // Fetch entries for the specific user (not current user)
       console.log('Fetching entries for user:', timesheet.user_id);
       
-      // Use the API to get specific user's entries via apiClient
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+      // Use relative path (works on single service deployment)
       const token = localStorage.getItem('authToken');
-      const userEntries = await fetch(`${API_BASE_URL}/time-entries/user/${timesheet.user_id}`, {
+      const userEntries = await fetch(`/time-entries/user/${timesheet.user_id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
