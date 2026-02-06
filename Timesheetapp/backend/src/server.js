@@ -46,7 +46,8 @@ app.use((req, res, next) => {
 });
 
 // ✅ Serve frontend static files from public directory
-app.use(express.static(path.join(__dirname, '../public')));
+app.use(express.static(path.join(__dirname, '../../frontend/dist')));
+
 
 // ==================== HEALTH CHECK ====================
 
@@ -113,7 +114,7 @@ const spaFallback = (req, res, next) => {
   }
   
   // Serve index.html for all other requests (SPA routing)
-  res.sendFile(path.join(__dirname, '../public/index.html'), (err) => {
+ res.sendFile(path.join(__dirname, '../../frontend/dist/index.html'), (err) => {
     if (err) {
       // If index.html doesn't exist, return 404
       res.status(404).json({ error: 'Not found' });
