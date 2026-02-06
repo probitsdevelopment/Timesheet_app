@@ -25,9 +25,6 @@ const salaryProcessingRoutes = require('./routes/salaryProcessingRoutes');
 const corsMiddleware = require('cors')(corsConfig);
 app.use(corsMiddleware);
 
-// ✅ Handle preflight requests for all routes
-app.options('*', corsMiddleware);
-
 // Body parsers
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
