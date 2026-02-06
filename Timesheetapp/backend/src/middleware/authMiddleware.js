@@ -10,6 +10,11 @@ if (!JWT_SECRET) {
 
 // JWT Verification Middleware
 const verifyToken = (req, res, next) => {
+  // ✅ CRITICAL: Skip verification for OPTIONS (CORS preflight) requests
+  if (req.method === 'OPTIONS') {
+    return next();
+  }
+
   const token = req.headers.authorization?.split(" ")[1];
 
   if (!token) {

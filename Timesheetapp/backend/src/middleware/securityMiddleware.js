@@ -4,11 +4,13 @@ const { RATE_LIMITS } = require('../config/constants');
 
 // CORS Configuration - Allow frontend origins and handle credentials
 const allowedOrigins = [
-  'http://localhost:8080',           // Local development frontend
-  'http://localhost:3000',           // Alternative local port
-  'http://127.0.0.1:8080',          // Local development (127.0.0.1)
-  'http://127.0.0.1:3000',          // Local development (127.0.0.1)
-  'https://robust-flow-production.up.railway.app',  // Production Railway app
+  // Local development
+  'http://localhost:8080',
+  'http://localhost:3000',
+  'http://127.0.0.1:8080',
+  'http://127.0.0.1:3000',
+  // Production Railway
+  'https://robust-flow-production.up.railway.app',  // Frontend production
 ];
 
 const corsConfig = {
@@ -18,21 +20,29 @@ const corsConfig = {
       return callback(null, true);
     }
     
-    if (allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development') {
+    // Check if origin is in whitelist
+    const isAllowed = allowedOrigins.includes(origin);
+    
+    // In development, allow all origins for testing
+    if (process.env.NODE_ENV === 'development') {
       return callback(null, true);
     }
     
-    // In production, only allow specific origins. Log rejected origins for debugging.
+    // In production, only allow whitelisted origins
     if (process.env.NODE_ENV === 'production') {
-      console.warn(`⚠️  CORS rejected origin: ${origin}`);
-      return callback(null, false);
+      if (isAllowed) {
+        return callback(null, true);
+      } else {
+        console.warn(`⚠️  CORS rejected origin: ${origin}`);
+        return callback(new Error('CORS not allowed'), false);
+      }
     }
     
-    // Development mode allows all origins
-    return callback(null, true);
+    // Default: allow
+    return callback(null, isAllowed);
   },
   methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-  allowedHeaders: 'Content-Type,Authorization',
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,  // Allow cookies/credentials
   optionsSuccessStatus: 200,
   maxAge: 3600  // Cache preflight requests for 1 hour

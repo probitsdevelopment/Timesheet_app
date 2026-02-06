@@ -25,6 +25,9 @@ const salaryProcessingRoutes = require('./routes/salaryProcessingRoutes');
 const corsMiddleware = require('cors')(corsConfig);
 app.use(corsMiddleware);
 
+// ✅ Handle preflight requests for all routes
+app.options('*', corsMiddleware);
+
 // Body parsers
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
@@ -32,14 +35,23 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 // Security headers
 app.use(securityHeaders);
 
+// ✅ Debug middleware to log CORS headers
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV === 'development') {
+    const origin = req.headers.origin;
+    const method = req.method;
+    if (method === 'OPTIONS' || origin) {
+      console.log(`📍 ${method} ${req.path} | Origin: ${origin || '(none)'}`);
+    }
+  }
+  next();
+});
+
 // ==================== HEALTH CHECK ====================
 
 app.get('/', (req, res) => {
   res.json({ message: "Express server is running", port: PORT });
 });
-
-// ==================== CRITICAL: Handle ALL OPTIONS requests (preflight) ====================
-app.options('*', corsMiddleware);
 
 // ==================== API ROUTES ====================
 
