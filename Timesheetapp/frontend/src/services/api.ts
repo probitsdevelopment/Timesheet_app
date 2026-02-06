@@ -1,6 +1,6 @@
 // ✅ For single service deployment: use relative paths
 // For multi-service: use VITE_API_BASE_URL environment variable
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 // Get token from localStorage
 const getToken = () => localStorage.getItem('authToken');
