@@ -138,7 +138,7 @@ app.use((err, req, res, next) => {
 
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`\n✅ Express server running on http://localhost:${PORT}`);
+ console.log(`\n✅ Express server running on port ${PORT}`);
   console.log(`🗄️  PostgreSQL configured`);
   console.log(`🔒 JWT Secret configured: ${process.env.JWT_SECRET ? "YES" : "NO"}`);
   console.log(`📦 API Version: 1.0.0 - Timesheet Application\n`);
