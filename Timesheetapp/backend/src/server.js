@@ -3,7 +3,7 @@ require('dotenv').config();
 const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 
 // Import middleware
 const { corsConfig, securityHeaders } = require('./middleware/securityMiddleware');
