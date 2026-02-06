@@ -96,26 +96,32 @@ app.get('/my-time-entries', verifyToken, getUserTimeEntries);
 
 // ✅ SPA fallback - serve index.html for all non-API routes
 // This allows React Router to handle client-side routing
-app.get('*', (req, res) => {
-  // Only redirect if not an API call
-  if (!req.path.startsWith('/register') && 
-      !req.path.startsWith('/login') && 
-      !req.path.startsWith('/me') &&
-      !req.path.startsWith('/users') &&
-      !req.path.startsWith('/projects') &&
-      !req.path.startsWith('/time-entries') &&
-      !req.path.startsWith('/timesheets') &&
-      !req.path.startsWith('/leaves') &&
-      !req.path.startsWith('/leave-allocation') &&
-      !req.path.startsWith('/holidays') &&
-      !req.path.startsWith('/salaries') &&
-      !req.path.startsWith('/salary-processing') &&
-      !req.path.startsWith('/my-time-entries')) {
-    return res.sendFile(path.join(__dirname, '../public/index.html'));
+// BEFORE error handler, AFTER all API routes
+const spaFallback = (req, res, next) => {
+  // List of API route patterns to skip
+  const apiPatterns = [
+    '/register', '/login', '/me', '/users', '/projects', '/time-entries',
+    '/timesheets', '/leaves', '/leave-allocation', '/holidays', '/salaries',
+    '/salary-processing', '/my-time-entries'
+  ];
+  
+  // Check if this is an API request
+  const isApiRequest = apiPatterns.some(pattern => req.path.startsWith(pattern));
+  
+  if (isApiRequest) {
+    return next(); // Let API routes handle it
   }
-  // Let API routes continue to error handler
-  next();
-});
+  
+  // Serve index.html for all other requests (SPA routing)
+  res.sendFile(path.join(__dirname, '../public/index.html'), (err) => {
+    if (err) {
+      // If index.html doesn't exist, return 404
+      res.status(404).json({ error: 'Not found' });
+    }
+  });
+};
+
+app.use(spaFallback);
 
 // ==================== ERROR HANDLING ====================
 
