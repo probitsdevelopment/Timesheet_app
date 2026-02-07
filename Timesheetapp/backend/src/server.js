@@ -45,8 +45,9 @@ app.use((req, res, next) => {
   next();
 });
 
-// ✅ Serve frontend static files from public directory
-app.use(express.static(path.join(__dirname, '../../frontend/dist')));
+// ✅ Serve frontend static files from public directory (built by Railway)
+app.use(express.static(path.join(__dirname, '../public')));
+
 
 
 // ==================== HEALTH CHECK ====================
@@ -114,11 +115,15 @@ const spaFallback = (req, res, next) => {
   }
 
   // Serve index.html for all other requests (SPA routing)
-  res.sendFile(path.join(__dirname, '../../frontend/dist/index.html'), (err) => {
+  res.sendFile(path.join(__dirname, '../public/index.html'), (err) => {
     if (err) {
       // If index.html doesn't exist, return 404
-      res.status(404).json({ error: 'Not found' });
+      console.error('❌ index.html not found:', err.message);
+      res.status(404).send('Frontend not built. Run: npm run build in frontend directory');
     }
+  });
+  res.status(404).json({ error: 'Not found' });
+}
   });
 };
 
