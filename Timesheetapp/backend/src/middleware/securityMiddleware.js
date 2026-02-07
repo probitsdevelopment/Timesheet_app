@@ -3,42 +3,47 @@ const rateLimit = require('express-rate-limit');
 const { RATE_LIMITS } = require('../config/constants');
 
 // CORS Configuration - Allow frontend origins and handle credentials
-const allowedOrigins = [
-  // Local development
-  'http://localhost:8080',
-  'http://localhost:3000',
-  'http://127.0.0.1:8080',
-  'http://127.0.0.1:3000',
-  // Production Railway
-  'https://timesheetapp-production-dc5f.up.railway.app'  // Frontend production
-];
+// Support environment variable for dynamic origins in production
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
+  : [
+    // Local development
+    'http://localhost:8080',
+    'http://localhost:3000',
+    'http://127.0.0.1:8080',
+    'http://127.0.0.1:3000',
+    // Production Railway
+    'https://timesheetapp-production-dc5f.up.railway.app'  // Frontend production
+  ];
 
 const corsConfig = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (like curl requests, mobile apps, or service workers)
+    // ✅ CRITICAL: Allow requests with no origin (same-origin requests, curl, mobile apps, service workers)
+    // This is essential for single-service deployments where frontend and backend are served from same domain
     if (!origin) {
       return callback(null, true);
     }
-    
+
     // Check if origin is in whitelist
     const isAllowed = allowedOrigins.includes(origin);
-    
+
     // In development, allow all origins for testing
     if (process.env.NODE_ENV === 'development') {
       return callback(null, true);
     }
-    
-    // In production, only allow whitelisted origins
+
+    // In production, allow whitelisted origins
     if (process.env.NODE_ENV === 'production') {
       if (isAllowed) {
         return callback(null, true);
       } else {
         console.warn(`⚠️  CORS rejected origin: ${origin}`);
+        console.log(`📋 Allowed origins: ${allowedOrigins.join(', ')}`);
         return callback(new Error('CORS not allowed'), false);
       }
     }
-    
-    // Default: allow
+
+    // Default: allow if in whitelist
     return callback(null, isAllowed);
   },
   methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
