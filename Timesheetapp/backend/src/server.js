@@ -122,7 +122,7 @@ const spaFallback = (req, res, next) => {
       res.status(404).send('Frontend not built. Run: npm run build in frontend directory');
     }
   });
-  res.status(404).json({ error: 'Not found' });
+
 }
 
 
