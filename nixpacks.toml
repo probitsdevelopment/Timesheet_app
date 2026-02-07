@@ -1,0 +1,18 @@
+[phases.setup]
+nixPkgs = ['nodejs-18_x']
+
+[phases.install]
+cmds = [
+  'cd Timesheetapp/frontend && npm ci',
+  'cd Timesheetapp/backend && npm ci'
+]
+
+[phases.build]
+cmds = [
+  'cd Timesheetapp/frontend && npm run build',
+  'mkdir -p Timesheetapp/backend/public',
+  'cp -r Timesheetapp/frontend/dist/* Timesheetapp/backend/public/'
+]
+
+[start]
+cmd = 'cd Timesheetapp/backend && node src/server.js'
