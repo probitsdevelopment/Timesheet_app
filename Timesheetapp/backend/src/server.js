@@ -124,8 +124,7 @@ const spaFallback = (req, res, next) => {
   });
   res.status(404).json({ error: 'Not found' });
 }
-  });
-};
+
 
 app.use(spaFallback);
 
