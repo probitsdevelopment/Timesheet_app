@@ -26,6 +26,22 @@ const pool = new Pool(
     }
 );
 
+// Test connection on startup
+pool.query('SELECT NOW()', (err, res) => {
+  if (err) {
+    console.error('❌ Database connection failed:', err.message);
+    console.error('📋 Connection details:', {
+      usingDatabaseUrl: !!process.env.DATABASE_URL,
+      host: process.env.DB_HOST || 'localhost',
+      port: process.env.DB_PORT || 5432,
+      database: process.env.DB_NAME || 'timesheet_db'
+    });
+  } else {
+    console.log('✅ Database connection successful');
+    console.log('📅 Server time:', res.rows[0].now);
+  }
+});
+
 // Test connection
 pool.on('connect', () => {
   console.log('✅ Connected to PostgreSQL database');

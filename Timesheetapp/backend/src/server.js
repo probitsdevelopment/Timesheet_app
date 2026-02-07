@@ -105,16 +105,16 @@ const spaFallback = (req, res, next) => {
     '/timesheets', '/leaves', '/leave-allocation', '/holidays', '/salaries',
     '/salary-processing', '/my-time-entries'
   ];
-  
+
   // Check if this is an API request
   const isApiRequest = apiPatterns.some(pattern => req.path.startsWith(pattern));
-  
+
   if (isApiRequest) {
     return next(); // Let API routes handle it
   }
-  
+
   // Serve index.html for all other requests (SPA routing)
- res.sendFile(path.join(__dirname, '../../frontend/dist/index.html'), (err) => {
+  res.sendFile(path.join(__dirname, '../../frontend/dist/index.html'), (err) => {
     if (err) {
       // If index.html doesn't exist, return 404
       res.status(404).json({ error: 'Not found' });
@@ -138,9 +138,11 @@ app.use((err, req, res, next) => {
 
 
 app.listen(PORT, "0.0.0.0", () => {
- console.log(`\n✅ Express server running on port ${PORT}`);
+  console.log(`\n✅ Express server running on port ${PORT}`);
   console.log(`🗄️  PostgreSQL configured`);
   console.log(`🔒 JWT Secret configured: ${process.env.JWT_SECRET ? "YES" : "NO"}`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔗 Database: ${process.env.DATABASE_URL ? 'Using DATABASE_URL' : 'Using individual params'}`);
   console.log(`📦 API Version: 1.0.0 - Timesheet Application\n`);
 });
 
