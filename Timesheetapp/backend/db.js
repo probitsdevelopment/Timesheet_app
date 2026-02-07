@@ -17,11 +17,16 @@ if (process.env.DATABASE_URL) {
     ssl: {
       rejectUnauthorized: false // Required for Supabase
     },
+    // Force IPv4 to avoid IPv6 connection issues on Railway
+    connectionTimeoutMillis: 5000,
+    query_timeout: 10000,
+    statement_timeout: 10000,
     max: 20,
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
   };
-  console.log(`🔗 Connecting to: ${url.hostname}:${url.port}/${url.pathname.slice(1)}`);
+
+  // Log connection attempt
+  console.log(`🔗 Connecting to: ${url.hostname}:${url.port}/${url.pathname.slice(1)} (IPv4 forced)`);
 } else {
   // Use individual parameters
   poolConfig = {
