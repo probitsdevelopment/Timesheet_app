@@ -4,6 +4,6 @@
 # Database backups
 *.dump
 *.backup
-.env.example
+*.env.example
 # Process files
 *.pid
