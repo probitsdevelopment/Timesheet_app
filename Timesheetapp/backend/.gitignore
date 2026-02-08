@@ -1,6 +1,6 @@
 # Backend-specific ignores
 # (Most patterns are handled by root .gitignore)
-
+*.env.example
 # Database backups
 *.dump
 *.backup
