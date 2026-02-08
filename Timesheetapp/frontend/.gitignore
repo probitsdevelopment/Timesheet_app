@@ -7,3 +7,7 @@ dist-ssr/
 # Package manager outputs
 pnpm-lock.yaml
 bun.lockb
+*.env
+*.env.local
+*.env.example
+*.env.production

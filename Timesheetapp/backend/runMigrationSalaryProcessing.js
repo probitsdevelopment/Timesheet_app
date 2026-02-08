@@ -39,7 +39,7 @@ const runMigration = async () => {
       ON salary_processing(status);
     `);
     console.log('✅ Created index on status');
-
+    console.log('🔍 Verifying table structure...');
     // Verify table structure
     const result = await db.query(`
       SELECT column_name, data_type, is_nullable 
@@ -60,5 +60,6 @@ const runMigration = async () => {
     process.exit(1);
   }
 };
+
 
 runMigration();
