@@ -121,7 +121,7 @@ const login = async (req, res) => {
 const getCurrentUser = async (req, res) => {
   try {
     const user = await db.getOne(
-      "SELECT id, username, email, role, created_at, last_login FROM users WHERE id = $1",
+      "SELECT id, username, email, name, role, organization, created_at, last_login, manager_id as managerid FROM users WHERE id = $1",
       [req.user.userId]
     );
 

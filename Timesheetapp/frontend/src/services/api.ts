@@ -3,20 +3,12 @@
 
 import { baseURL } from "./networkConstant";
 
-// const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/';
-// // const API_BASE_URL = baseURL;
-// const normalizeEndpoint = (endpoint: string) => {
-//   if (endpoint.startsWith('/')) return endpoint;
-//   return '/' + endpoint;
-// };
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
-
-const buildURL = (endpoint: string) => {
-  return `${API_BASE_URL}${endpoint}`;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/';
+// const API_BASE_URL = baseURL;
+const normalizeEndpoint = (endpoint: string) => {
+  if (endpoint.startsWith('/')) return endpoint;
+  return '/' + endpoint;
 };
-
-
 // Get token from localStorage
 const getToken = () => localStorage.getItem('authToken');
 
@@ -25,16 +17,15 @@ export const apiClient = {
     const headers: any = { 'Content-Type': 'application/json' };
     const token = getToken();
     if (token) headers['Authorization'] = `Bearer ${token}`;
-    
-    // const response = await fetch(`${API_BASE_URL}${normalizeEndpoint(endpoint)}`, { headers });
-    const response = await fetch(buildURL(endpoint), { headers });
+
+    const response = await fetch(`${API_BASE_URL}${normalizeEndpoint(endpoint)}`, { headers });
     const responseData = await response.json();
-    
+
     if (!response.ok) {
       console.error('❌ API Error Response:', { status: response.status, data: responseData });
       throw new Error(responseData.error || `API Error: ${response.status}`);
     }
-    
+
     return responseData;
   },
 
@@ -42,23 +33,22 @@ export const apiClient = {
     const headers: any = { 'Content-Type': 'application/json' };
     const token = getToken();
     if (token) headers['Authorization'] = `Bearer ${token}`;
-    
+
     console.log('📤 POST Request to:', endpoint, 'Data:', data);
-    
-    // const response = await fetch(`${API_BASE_URL}${normalizeEndpoint(endpoint)}`, {
-    const response = await fetch(buildURL(endpoint), {
+
+    const response = await fetch(`${API_BASE_URL}${normalizeEndpoint(endpoint)}`, {
       method: 'POST',
       headers,
       body: JSON.stringify(data),
     });
-    
+
     const responseData = await response.json();
-    
+
     if (!response.ok) {
       console.error('❌ API Error Response:', { status: response.status, data: responseData });
       throw new Error(responseData.error || `API Error: ${response.status}`);
     }
-    
+
     return responseData;
   },
 
@@ -66,21 +56,20 @@ export const apiClient = {
     const headers: any = { 'Content-Type': 'application/json' };
     const token = getToken();
     if (token) headers['Authorization'] = `Bearer ${token}`;
-    
-    // const response = await fetch(`${API_BASE_URL}${normalizeEndpoint(endpoint)}`, {
-    const response = await fetch(buildURL(endpoint), {
+
+    const response = await fetch(`${API_BASE_URL}${normalizeEndpoint(endpoint)}`, {
       method: 'PUT',
       headers,
       body: JSON.stringify(data),
     });
-    
+
     const responseData = await response.json();
-    
+
     if (!response.ok) {
       console.error('❌ API Error Response:', { status: response.status, data: responseData });
       throw new Error(responseData.error || `API Error: ${response.status}`);
     }
-    
+
     return responseData;
   },
 
@@ -88,20 +77,19 @@ export const apiClient = {
     const headers: any = { 'Content-Type': 'application/json' };
     const token = getToken();
     if (token) headers['Authorization'] = `Bearer ${token}`;
-    
-    // const response = await fetch(`${API_BASE_URL}${normalizeEndpoint(endpoint)}`, {
-    const response = await fetch(buildURL(endpoint), {
+
+    const response = await fetch(`${API_BASE_URL}${normalizeEndpoint(endpoint)}`, {
       method: 'DELETE',
       headers,
     });
-    
+
     const responseData = await response.json();
-    
+
     if (!response.ok) {
       console.error('❌ API Error Response:', { status: response.status, data: responseData });
       throw new Error(responseData.error || `API Error: ${response.status}`);
     }
-    
+
     return responseData;
   },
 };
@@ -110,7 +98,7 @@ export const apiClient = {
 export const authService = {
   register: (name: string, email: string, password: string, organization?: string) =>
     apiClient.post('/register', { name, email, password, organization }),
-  
+
   login: (email: string, password: string) =>
     apiClient.post('/login', { email, password }),
 
@@ -139,7 +127,7 @@ export const timesheetService = {
   update: (id: string, entry: any) => apiClient.put(`/time-entries/${id}`, entry),
   delete: (id: string) => apiClient.delete(`/time-entries/${id}`),
   // ✅ NEW: Get entries filtered by work location
-  getByLocation: (workLocation: 'office' | 'work_from_home') => 
+  getByLocation: (workLocation: 'office' | 'work_from_home') =>
     apiClient.get(`/my-time-entries?workLocation=${workLocation}`),
 };
 
@@ -148,17 +136,17 @@ export const timesheetSubmissionService = {
   getAll: () => apiClient.get('/timesheets'),
   getById: (id: string) => apiClient.get(`/timesheets/${id}`),
   getByUserId: (userId: string) => apiClient.get(`/timesheets?userId=${userId}`),
-  getByMonth: (userId: string, month: string) => 
+  getByMonth: (userId: string, month: string) =>
     apiClient.get(`/timesheets?userId=${userId}&month=${month}`),
   create: (timesheet: any) => apiClient.post('/timesheets', timesheet),
   update: (id: string, timesheet: any) => apiClient.put(`/timesheets/${id}`, timesheet),
-  submit: (id: string, timesheetData: any) => 
+  submit: (id: string, timesheetData: any) =>
     apiClient.put(`/timesheets/${id}`, { ...timesheetData, status: 'submitted', submittedAt: new Date().toISOString() }),
-  approve: (id: string, approverId: string) => 
+  approve: (id: string, approverId: string) =>
     apiClient.put(`/timesheets/${id}`, { status: 'approved', approvedAt: new Date().toISOString(), approvedBy: approverId }),
-  reject: (id: string, rejectionReason: string) => 
+  reject: (id: string, rejectionReason: string) =>
     apiClient.put(`/timesheets/${id}`, { status: 'rejected', rejectionReason }),
-  getPendingApprovals: (managerId: string) => 
+  getPendingApprovals: (managerId: string) =>
     apiClient.get(`/timesheets?submittedTo=${managerId}&status=submitted`),
 };
 
@@ -191,7 +179,7 @@ export const userService = {
   assignManager: (id: string, managerId: string) => apiClient.put(`/users/${id}/assign-manager`, { manager_id: managerId }),
 };
 
-export const salaryService = { 
+export const salaryService = {
   getAll: () => apiClient.get('/salaries'),
   getByUserId: (userId: string) => apiClient.get(`/salaries?userId=${userId}`),
   create: (salary: any) => apiClient.post('/salaries', salary),
@@ -217,12 +205,12 @@ export const leaveAllocationService = {
 
 // Salary Processing Service
 export const salaryProcessingService = {
-  process: (data: { userId: number; month: string }) => 
+  process: (data: { userId: number; month: string }) =>
     apiClient.post('/salary-processing/process', data),
-  getByUserAndMonth: (userId: number, month: string) => 
+  getByUserAndMonth: (userId: number, month: string) =>
     apiClient.get(`/salary-processing/user/${userId}/${month}`),
-  getByMonth: (month: string) => 
+  getByMonth: (month: string) =>
     apiClient.get(`/salary-processing/month?month=${month}`),
-  getHistory: (userId: number) => 
+  getHistory: (userId: number) =>
     apiClient.get(`/salary-processing/history/${userId}`),
 };
