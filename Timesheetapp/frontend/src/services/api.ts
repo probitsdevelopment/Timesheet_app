@@ -1,10 +1,16 @@
 // ✅ For single service deployment: use relative paths
 // For multi-service: use VITE_API_BASE_URL environment variable
 import { baseURL } from './networkConstant';
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/';
-const normalizeEndpoint = (endpoint: string) => {
-  if (endpoint.startsWith('/')) return endpoint;
-  return '/' + endpoint;
+// const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/';
+// const normalizeEndpoint = (endpoint: string) => {
+//   if (endpoint.startsWith('/')) return endpoint;
+//   return '/' + endpoint;
+// };
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
+
+const buildURL = (endpoint: string) => {
+  return `${API_BASE_URL}${endpoint}`;
 };
 // Get token from localStorage
 const getToken = () => localStorage.getItem('authToken');
@@ -15,7 +21,7 @@ export const apiClient = {
     const token = getToken();
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const response = await fetch(`${API_BASE_URL}${normalizeEndpoint(endpoint)}`, { headers });
+    const response = await fetch(buildURL(endpoint), { headers });
     const responseData = await response.json();
 
     if (!response.ok) {
@@ -33,7 +39,7 @@ export const apiClient = {
 
     console.log('📤 POST Request to:', endpoint, 'Data:', data);
 
-    const response = await fetch(`${API_BASE_URL}${normalizeEndpoint(endpoint)}`, {
+    const response = await fetch(buildURL(endpoint), {
       method: 'POST',
       headers,
       body: JSON.stringify(data),
@@ -54,7 +60,7 @@ export const apiClient = {
     const token = getToken();
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const response = await fetch(`${API_BASE_URL}${normalizeEndpoint(endpoint)}`, {
+    const response = await fetch(buildURL(endpoint), {
       method: 'PUT',
       headers,
       body: JSON.stringify(data),
@@ -75,7 +81,7 @@ export const apiClient = {
     const token = getToken();
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const response = await fetch(`${API_BASE_URL}${normalizeEndpoint(endpoint)}`, {
+    const response = await fetch(buildURL(endpoint), {
       method: 'DELETE',
       headers,
     });
