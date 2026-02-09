@@ -111,7 +111,7 @@ const updateAllocation = async (req, res) => {
 
     const result = await db.query(
       `INSERT INTO leave_allocation (user_id, leave_type, allocated_days, year, organization)
-       VALUES ($1, $2, $3, $4, 0, $5)
+       VALUES ($1, $2, $3, $4, $5)
        ON CONFLICT (user_id, leave_type, year, organization) 
        DO UPDATE SET allocated_days = $3, updated_at = CURRENT_TIMESTAMP
        RETURNING *`,
@@ -183,7 +183,7 @@ const bulkAllocateLeaves = async (req, res) => {
     for (const userId of userIds) {
       const result = await db.query(
         `INSERT INTO leave_allocation (user_id, leave_type, allocated_days, year, organization)
-         VALUES ($1, $2, $3, $4, 0, $5)
+         VALUES ($1, $2, $3, $4, $5)
          ON CONFLICT (user_id, leave_type, year, organization) 
          DO UPDATE SET allocated_days = $3, updated_at = CURRENT_TIMESTAMP
          RETURNING id`,
