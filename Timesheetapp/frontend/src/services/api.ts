@@ -11,7 +11,6 @@ const normalizeEndpoint = (endpoint: string) => {
 };
 // Get token from localStorage
 const getToken = () => localStorage.getItem('authToken');
-
 export const apiClient = {
   get: async (endpoint: string) => {
     const headers: any = { 'Content-Type': 'application/json' };
@@ -28,6 +27,7 @@ export const apiClient = {
 
     return responseData;
   },
+
 
   post: async (endpoint: string, data: any) => {
     const headers: any = { 'Content-Type': 'application/json' };
