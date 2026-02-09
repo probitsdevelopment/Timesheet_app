@@ -120,23 +120,20 @@ const ApprovalsPage = () => {
       // Fetch entries for the specific user (not current user)
       console.log('Fetching entries for user:', timesheet.user_id);
       
-      // Use relative path (works on single service deployment)
-      const token = localStorage.getItem('authToken');
-      const userEntries = await fetch(`/time-entries/user/${timesheet.user_id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      }).then(res => {
-        if (!res.ok) throw new Error('Failed to fetch user entries');
-        return res.json();
-      });
-      console.log('Fetched entries for user', timesheet.user_id, ':', userEntries);
+      // Use API service to properly handle auth and base URL
+      const userEntries = await timesheetService.getForUser(timesheet.user_id);
+      console.log('🔍 RAW API RESPONSE - All entries:', userEntries);
+      console.log('Check first entry structure:', userEntries[0]);
       
       // Filter entries for the selected month
-      const filteredEntries = userEntries.filter((e: any) => e.date.startsWith(timesheet.month));
-      console.log('Filtered entries for month', timesheet.month, ':', filteredEntries);
-      console.log('Sample entry:', filteredEntries[0]);
+      const filteredEntries = userEntries.filter((e: any) => e.date && e.date.startsWith(timesheet.month));
+      console.log('🔍 FILTERED ENTRIES FOR MONTH:', timesheet.month, filteredEntries);
+      console.log('Entries with locations:', filteredEntries.map((e: any) => ({ 
+        date: e.date, 
+        work_location: e.work_location,
+        location_type: typeof e.work_location,
+        location_value: JSON.stringify(e.work_location)
+      })));
       
       setTimesheetEntries(filteredEntries);
       setViewTimesheetOpen(true);
@@ -535,6 +532,39 @@ const ApprovalsPage = () => {
                     const dateStr = `${viewCurrentMonth}-${String(day).padStart(2, '0')}`;
                     const dayEntries = timesheetEntries.filter((e) => e.date === dateStr);
                     const dayHours = Math.round(dayEntries.reduce((sum, e) => sum + parseFloat(e.hours?.toString() || '0'), 0) * 10) / 10;
+                    
+                    // Get work location indicators for this day
+                    const hasOffice = dayEntries.some((e) => e.work_location === 'office');
+                    const hasWFH = dayEntries.some((e) => e.work_location === 'work_from_home');
+                    
+                    // Log first few days with entries to debug
+                    if (i === 0 || (i < 5 && dayEntries.length > 0)) {
+                      const allWorkLocations = dayEntries.map(e => e.work_location);
+                      console.log(`Approvals - Day ${day}:`, { 
+                        dateStr, 
+                        entriesCount: dayEntries.length,
+                        dayHours,
+                        rawLocations: allWorkLocations,
+                        entries: dayEntries.map(e => ({ 
+                          id: e.id,
+                          hours: e.hours,
+                          work_location: e.work_location,
+                          work_location_typeof: typeof e.work_location,
+                          description: e.description
+                        })),
+                        hasOffice,
+                        hasWFH,
+                        debugCheck: {
+                          officeMatch: dayEntries.map(e => e.work_location === 'office'),
+                          wfhMatch: dayEntries.map(e => e.work_location === 'work_from_home'),
+                          allValues: dayEntries.map(e => `"${e.work_location}"`)
+                        }
+                      });
+                      // Extra: Show ALL keys on first entry
+                      if (dayEntries.length > 0) {
+                        console.log('FULL ENTRY OBJECT KEYS:', Object.keys(dayEntries[0]), dayEntries[0]);
+                      }
+                    }
 
                     return (
                       <div
@@ -544,10 +574,18 @@ const ApprovalsPage = () => {
                             ? 'border-blue-200 bg-blue-50'
                             : 'border-gray-200 bg-gray-50'
                         }`}
+                        title={`${dayEntries.length} entries`}
                       >
                         <div className="font-semibold text-sm">{day}</div>
                         {dayHours > 0 && (
-                          <div className="text-xs text-blue-600 font-medium">{dayHours}h</div>
+                          <div className="flex flex-col items-center justify-center gap-1 w-full mt-1">
+                            <div className="text-xs text-blue-600 font-medium">{dayHours}h</div>
+                            <div className="flex gap-1 items-center justify-center">
+                              {hasOffice && <span title="Office" className="text-lg leading-none">🏢</span>}
+                              {hasWFH && <span title="Work From Home" className="text-lg leading-none">🏠</span>}
+                              {!hasOffice && !hasWFH && dayEntries.length > 0 && <span title="Work Location Unknown" className="text-lg leading-none">📍</span>}
+                            </div>
+                          </div>
                         )}
                       </div>
                     );

@@ -1,10 +1,6 @@
 // ✅ For single service deployment: use relative paths
 // For multi-service: use VITE_API_BASE_URL environment variable
-
-import { baseURL } from "./networkConstant";
-
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/';
-// const API_BASE_URL = baseURL;
 const normalizeEndpoint = (endpoint: string) => {
   if (endpoint.startsWith('/')) return endpoint;
   return '/' + endpoint;
@@ -129,6 +125,9 @@ export const timesheetService = {
   // ✅ NEW: Get entries filtered by work location
   getByLocation: (workLocation: 'office' | 'work_from_home') =>
     apiClient.get(`/my-time-entries?workLocation=${workLocation}`),
+  // ✅ NEW: Get entries for a specific user (for manager approvals)
+  getForUser: (userId: string) =>
+    apiClient.get(`/time-entries/user/${userId}`),
 };
 
 // Timesheet Service (Monthly grouping)

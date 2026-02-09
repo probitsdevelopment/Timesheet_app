@@ -132,10 +132,18 @@ const getEntriesByUserId = async (req, res) => {
     const { userId } = req.params;
     const organization = req.user.organization || DEFAULT_ORGANIZATION;
     
+    console.log(`\n🔍 DEBUG getEntriesByUserId - Fetching entries for userId=${userId}`);
     const entries = await db.getAll(
-      "SELECT id, user_id, project_id, TO_CHAR(date, 'YYYY-MM-DD') as date, task_start, task_end, CAST(hours AS DECIMAL) as hours, description, reason, status, created_at, organization FROM time_entries WHERE user_id = $1 AND organization = $2 ORDER BY date DESC",
+      "SELECT id, user_id, project_id, TO_CHAR(date, 'YYYY-MM-DD') as date, task_start, task_end, CAST(hours AS DECIMAL) as hours, description, reason, status, work_location, created_at, organization FROM time_entries WHERE user_id = $1 AND organization = $2 ORDER BY date DESC",
       [userId, organization]
     );
+
+    console.log(`✅ Found ${entries.length} raw entries from database`);
+    if (entries.length > 0) {
+      console.log(`📊 First entry raw keys:`, Object.keys(entries[0]));
+      console.log(`📊 First entry work_location:`, entries[0].work_location);
+      console.log(`📊 Full first entry:`, JSON.stringify(entries[0], null, 2));
+    }
 
     // Ensure hours is a number
     const formattedEntries = entries.map(entry => ({
@@ -143,7 +151,12 @@ const getEntriesByUserId = async (req, res) => {
       hours: parseFloat(entry.hours) || 0,
     }));
 
-    console.log(`✅ Found ${formattedEntries.length} entries for user_id=${userId}`);
+    console.log(`\n✅ Formatted entries - count: ${formattedEntries.length}`);
+    if (formattedEntries.length > 0) {
+      console.log(`📊 First formatted entry keys:`, Object.keys(formattedEntries[0]));
+      console.log(`📊 First formatted entry work_location:`, formattedEntries[0].work_location);
+    }
+
     logSecurityEvent("USER_ENTRIES_READ", { requestedBy: req.user.userId, targetUser: userId, count: formattedEntries.length });
 
     res.json(formattedEntries);
