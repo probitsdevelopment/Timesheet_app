@@ -107,7 +107,7 @@ const processSalary = async (req, res) => {
        (user_id, month, year, basic_salary, working_days, total_leaves, unpaid_leaves, 
         deduction, final_salary, timesheet_approved, status, processed_by, organization)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-       ON CONFLICT (user_id, month) 
+       ON CONFLICT (user_id, month, year, organization) 
        DO UPDATE SET 
          year = $3,
          basic_salary = $4,
