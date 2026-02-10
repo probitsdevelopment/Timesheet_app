@@ -291,7 +291,7 @@ const TimeSheetsPage = () => {
       </div>
 
       {/* Work Location Statistics */}
-      <LocationStats entries={entries} />
+      <LocationStats entries={monthEntries} />
 
       {/* Calendar View */}
       <Card className="border-0 shadow-md">
