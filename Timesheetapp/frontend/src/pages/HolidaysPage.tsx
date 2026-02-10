@@ -180,7 +180,7 @@ const HolidaysPage = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Holidays</h1>
-          <p className="text-muted-foreground">Manage company holidays and time off</p>
+          <p className="text-muted-foreground">Manage company holidays</p>
         </div>
       </div>
 
