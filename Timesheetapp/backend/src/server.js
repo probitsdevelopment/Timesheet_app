@@ -22,6 +22,9 @@ const salaryProcessingRoutes = require('./routes/salaryProcessingRoutes');
 
 // ==================== GLOBAL MIDDLEWARE ====================
 
+// Trust proxy - allows rate limiter to read X-Forwarded-For header correctly
+app.set('trust proxy', 1);
+
 // CORS - MUST be first middleware!
 const corsMiddleware = require('cors')(corsConfig);
 app.use(corsMiddleware);

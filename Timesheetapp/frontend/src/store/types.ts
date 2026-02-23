@@ -104,6 +104,7 @@ export interface TempFormEntry {
   project_id: string;
   projectName: string;
   description: string;
+  work_location: 'office' | 'work_from_home';
 }
 
 export interface TimesheetState {

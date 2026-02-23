@@ -96,15 +96,32 @@ const AddEntryModal = () => {
   const calculateHours = (start: string, end: string): number => {
     if (!start || !end) return 0;
 
-    const [startHour, startMin] = start.split(':').map(Number);
-    const [endHour, endMin] = end.split(':').map(Number);
+    const startParts = start.split(':').map(Number);
+    const endParts = end.split(':').map(Number);
+
+    if (startParts.length !== 2 || endParts.length !== 2) return 0;
+
+    const [startHour, startMin] = startParts;
+    const [endHour, endMin] = endParts;
 
     const startTotalMin = startHour * 60 + startMin;
     const endTotalMin = endHour * 60 + endMin;
 
-    if (endTotalMin <= startTotalMin) return 0;
+    let minutes = endTotalMin - startTotalMin;
 
-    return Math.round((endTotalMin - startTotalMin) / 60 * 100) / 100; // Round to 2 decimals
+    // Handle overnight shift
+    if (minutes < 0) {
+      minutes += 24 * 60;
+    }
+
+    const hours = minutes / 60;
+
+    return Number(hours.toFixed(2));
+  };
+
+  // Format hours to always show 2 decimal places
+  const formatHours = (hours: number): string => {
+    return hours.toFixed(2);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -252,7 +269,18 @@ const AddEntryModal = () => {
     });
   };
 
-  const totalHours = tempFormEntries.reduce((sum, entry) => sum + entry.hours, 0);
+  const totalHours = (() => {
+    // Calculate total from all entries by summing minutes first, then converting to hours
+    const totalMinutes = tempFormEntries.reduce((sum, entry) => {
+      const [startHour, startMin] = entry.taskStart.split(':').map(Number);
+      const [endHour, endMin] = entry.taskEnd.split(':').map(Number);
+      const startTotalMin = startHour * 60 + startMin;
+      const endTotalMin = endHour * 60 + endMin;
+      return sum + (endTotalMin - startTotalMin);
+    }, 0);
+    const hours = totalMinutes / 60;
+    return Math.round(hours * 100) / 100; // Round to 2 decimals
+  })();
 
   return (
     <Dialog open={showAddEntryModal} onOpenChange={handleClose}>
@@ -384,7 +412,7 @@ const AddEntryModal = () => {
             <div className="flex items-end gap-4">
               <div className="flex-1">
                 <Label className="text-sm font-medium text-gray-600">
-                  Hours: <span className="text-lg font-bold text-primary">{formData.hours}h</span>
+                  Hours: <span className="text-lg font-bold text-primary">{formatHours(formData.hours)}h</span>
                 </Label>
               </div>
               <Button
@@ -433,7 +461,7 @@ const AddEntryModal = () => {
                           </span>
                         </TableCell>
                         <TableCell>{entry.description}</TableCell>
-                        <TableCell className="text-right font-semibold">{entry.hours}h</TableCell>
+                        <TableCell className="text-right font-semibold">{formatHours(entry.hours)}h</TableCell>
                         <TableCell className="text-center">
                           <Button
                             variant="ghost"
@@ -454,7 +482,7 @@ const AddEntryModal = () => {
               <div className="bg-blue-50 p-4 border-t">
                 <div className="text-right">
                   <p className="text-lg font-bold">
-                    Total No of Hrs: <span className="text-blue-600">{totalHours}h</span>
+                    Total No of Hrs: <span className="text-blue-600">{formatHours(totalHours)}h</span>
                   </p>
                 </div>
               </div>

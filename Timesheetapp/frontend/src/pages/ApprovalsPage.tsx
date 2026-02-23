@@ -110,6 +110,33 @@ const ApprovalsPage = () => {
     return new Date(parseInt(year), parseInt(month) - 1, 1).getDay();
   };
 
+  // Calculate hours from start and end time
+  const calculateHours = (start: string, end: string): number => {
+    if (!start || !end) return 0;
+
+    const startParts = start.split(':').map(Number);
+    const endParts = end.split(':').map(Number);
+
+    if (startParts.length !== 2 || endParts.length !== 2) return 0;
+
+    const [startHour, startMin] = startParts;
+    const [endHour, endMin] = endParts;
+
+    const startTotalMin = startHour * 60 + startMin;
+    const endTotalMin = endHour * 60 + endMin;
+
+    let minutes = endTotalMin - startTotalMin;
+
+    // Handle overnight shift
+    if (minutes < 0) {
+      minutes += 24 * 60;
+    }
+
+    const hours = minutes / 60;
+
+    return Number(hours.toFixed(2));
+  };
+
   // Open timesheet calendar view
   const handleViewTimesheet = async (timesheet: any) => {
     try {
@@ -531,7 +558,8 @@ const ApprovalsPage = () => {
                     const day = i + 1;
                     const dateStr = `${viewCurrentMonth}-${String(day).padStart(2, '0')}`;
                     const dayEntries = timesheetEntries.filter((e) => e.date === dateStr);
-                    const dayHours = Math.round(dayEntries.reduce((sum, e) => sum + parseFloat(e.hours?.toString() || '0'), 0) * 10) / 10;
+                    const totalHours = dayEntries.reduce((sum, e) => sum + parseFloat(e.hours?.toString() || '0'), 0);
+                    const dayHours = Math.round(totalHours * 100) / 100; // Round to 2 decimals
                     
                     // Get work location indicators for this day
                     const hasOffice = dayEntries.some((e) => e.work_location === 'office');

@@ -325,7 +325,9 @@ const TimeSheetsPage = () => {
                 const day = i + 1;
                 const dateStr = `${currentMonth}-${String(day).padStart(2, '0')}`;
                 const dayEntries = monthEntries.filter((e) => e.date === dateStr);
-                const dayHours = Math.round(dayEntries.reduce((sum, e) => sum + parseFloat(e.hours?.toString() || '0'), 0) * 10) / 10;
+                // Calculate total hours correctly by avoiding rounding errors
+                const totalHours = dayEntries.reduce((sum, e) => sum + parseFloat(e.hours?.toString() || '0'), 0);
+                const dayHours = Math.round(totalHours * 100) / 100; // Round to 2 decimals
                 const isSelected = selectedDateLocal === dateStr;
                 
                 // Get work location indicators for this day
