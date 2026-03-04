@@ -22,9 +22,15 @@ router.get('/balance/:userId', verifyToken, (req, res, next) => {
 
 // Bulk allocate leaves to all org users (admin only)
 router.post('/bulk', verifyToken, (req, res, next) => {
+  console.log('🔥🔥🔥 ROUTE MIDDLEWARE HIT - /bulk endpoint 🔥🔥🔥');
+  console.log('User role:', req.user?.role);
+  console.log('Request body:', req.body);
+  
   if (req.user?.role !== 'admin') {
+    console.log('❌ Access denied - not admin');
     return res.status(403).json({ error: 'Only admins can bulk allocate leaves' });
   }
+  console.log('✅ Admin check passed, calling controller...');
   next();
 }, bulkAllocateLeaves);
 

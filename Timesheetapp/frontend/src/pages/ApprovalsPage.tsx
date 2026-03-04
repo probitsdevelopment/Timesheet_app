@@ -670,9 +670,6 @@ const ApprovalsPage = () => {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
                             <h4 className="font-semibold text-foreground">{leave.user_name}</h4>
-                            <span className="text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-700">
-                              {leave.leave_type}
-                            </span>
                             <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">
                               {leave.number_of_days} day{leave.number_of_days !== 1 ? 's' : ''}
                             </span>

@@ -14,7 +14,7 @@ const getLeaveBalance = async (req, res) => {
 
     // Get allocated days for this user
     const allocatedResult = await db.query(
-      `SELECT SUM(allocated_days) as total_allocated
+      `SELECT SUM(total_days) as total_allocated
        FROM leave_allocation
        WHERE user_id = $1 AND year = $2`,
       [userId, currentYear]
@@ -37,19 +37,19 @@ const getLeaveBalance = async (req, res) => {
     const typeBreakdownResult = await db.query(
       `SELECT 
          la.leave_type,
-         la.allocated_days,
+         la.total_days,
          COALESCE(SUM(l.number_of_days), 0) as used_days,
-         la.allocated_days - COALESCE(SUM(l.number_of_days), 0) as remaining_days
+         la.total_days - COALESCE(SUM(l.number_of_days), 0) as remaining_days
        FROM leave_allocation la
        LEFT JOIN leaves l ON la.user_id = l.user_id AND la.leave_type = l.leave_type AND l.status = 'approved'
        WHERE la.user_id = $1 AND la.year = $2
-       GROUP BY la.leave_type, la.allocated_days`,
+       GROUP BY la.leave_type, la.total_days`,
       [userId, currentYear]
     );
 
     const byType = typeBreakdownResult.rows.reduce((acc, row) => {
       acc[row.leave_type] = {
-        allocated: row.allocated_days,
+        allocated: row.total_days,
         used: parseInt(row.used_days),
         remaining: parseInt(row.remaining_days),
       };
@@ -83,7 +83,7 @@ const getAllAllocations = async (req, res) => {
          u.name,
          u.email,
          la.leave_type,
-         la.allocated_days,
+         la.total_days,
          la.year,
          la.created_at
        FROM leave_allocation la
@@ -101,19 +101,20 @@ const getAllAllocations = async (req, res) => {
 // Update leave allocation for a user (admin only)
 const updateAllocation = async (req, res) => {
   try {
-    const { userId, leaveType, allocatedDays, year } = req.body;
+    const { userId, allocatedDays, year } = req.body;
+    const leaveType = 'Leave'; // Default leave type
 
-    if (!userId || !leaveType || allocatedDays === undefined) {
+    if (!userId || allocatedDays === undefined) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
     console.log(`✏️ Updating allocation: user ${userId}, ${leaveType}, ${allocatedDays} days`);
 
     const result = await db.query(
-      `INSERT INTO leave_allocation (user_id, leave_type, allocated_days, year, organization)
+      `INSERT INTO leave_allocation (user_id, leave_type, total_days, year, organization)
        VALUES ($1, $2, $3, $4, $5)
        ON CONFLICT (user_id, leave_type, year, organization) 
-       DO UPDATE SET allocated_days = $3, updated_at = CURRENT_TIMESTAMP
+       DO UPDATE SET total_days = $3, updated_at = CURRENT_TIMESTAMP
        RETURNING *`,
       [userId, leaveType, allocatedDays, year || new Date().getFullYear(), req.user?.organization]
     );
@@ -133,12 +134,10 @@ const updateAllocation = async (req, res) => {
 // Bulk allocate leave days to all organization users (admin only)
 const bulkAllocateLeaves = async (req, res) => {
   try {
-    const { leaveType, allocatedDays, year } = req.body;
+    const allocatedDays = Number(req.body.allocatedDays);
+    const year = Number(req.body.year) || new Date().getFullYear();
     const adminUserId = req.user?.userId;
-
-    if (!leaveType || allocatedDays === undefined) {
-      return res.status(400).json({ error: 'Missing required fields' });
-    }
+    const leaveType = 'Leave'; // Default leave type
 
     if (!adminUserId) {
       return res.status(401).json({ error: 'User not authenticated' });
@@ -182,10 +181,10 @@ const bulkAllocateLeaves = async (req, res) => {
     let allocatedCount = 0;
     for (const userId of userIds) {
       const result = await db.query(
-        `INSERT INTO leave_allocation (user_id, leave_type, allocated_days, year, organization)
+        `INSERT INTO leave_allocation (user_id, leave_type, total_days, year, organization)
          VALUES ($1, $2, $3, $4, $5)
          ON CONFLICT (user_id, leave_type, year, organization) 
-         DO UPDATE SET allocated_days = $3, updated_at = CURRENT_TIMESTAMP
+         DO UPDATE SET total_days = $3, updated_at = CURRENT_TIMESTAMP
          RETURNING id`,
         [userId, leaveType, allocatedDays, currentYear, organization]
       );

@@ -20,12 +20,9 @@ const HolidaysPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   
   // Bulk leave allocation states
-  const [leaveType, setLeaveType] = useState<string>('Casual');
   const [allocatedDays, setAllocatedDays] = useState<string>('');
   const [year, setYear] = useState<string>(new Date().getFullYear().toString());
   const [isAllocating, setIsAllocating] = useState(false);
-
-  const leaveTypes = ['Casual', 'Sick', 'Earned', 'Maternity', 'Paternity', 'Personal', 'Special'];
 
   // Fetch holidays on component mount
   useEffect(() => {
@@ -146,10 +143,9 @@ const HolidaysPage = () => {
 
     try {
       setIsAllocating(true);
-      console.log(`Bulk allocating ${leaveType} leaves: ${allocatedDays} days for year ${year}`);
+      console.log(`Bulk allocating leaves: ${allocatedDays} days for year ${year}`);
       
       const response = await apiClient.post('/leave-allocation/bulk', {
-        leaveType,
         allocatedDays: parseInt(allocatedDays),
         year: parseInt(year),
       });
@@ -157,12 +153,11 @@ const HolidaysPage = () => {
       console.log('Bulk allocation response:', response);
       toast({
         title: 'Success',
-        description: `${leaveType} leaves allocated to all users`,
+        description: `Leaves allocated to all users`,
       });
       
       // Reset form
       setAllocatedDays('');
-      setLeaveType('Casual');
     } catch (error: any) {
       console.error('Error allocating leaves:', error);
       toast({
@@ -251,22 +246,7 @@ const HolidaysPage = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="leave-type">Leave Type</Label>
-                  <Select value={leaveType} onValueChange={setLeaveType}>
-                    <SelectTrigger id="leave-type">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {leaveTypes.map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {type}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="days">Number of Days</Label>
                   <Input

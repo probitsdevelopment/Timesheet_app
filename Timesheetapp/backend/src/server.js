@@ -36,8 +36,12 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 // Security headers
 app.use(securityHeaders);
 
-// ✅ Debug middleware to log CORS headers
+// ✅ Debug middleware to log CORS headers and ALL requests
 app.use((req, res, next) => {
+  console.log(`\n🌐 ${req.method} ${req.path}`);
+  console.log('Body:', JSON.stringify(req.body));
+  console.log('Headers:', req.headers.authorization ? 'Has Auth' : 'No Auth');
+  
   if (process.env.NODE_ENV === 'development') {
     const origin = req.headers.origin;
     const method = req.method;
