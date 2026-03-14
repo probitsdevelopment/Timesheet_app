@@ -72,20 +72,28 @@ const getTimesheetById = async (req, res) => {
 // CREATE timesheet
 const createTimesheet = async (req, res) => {
   try {
-    const { month, year, total_hours, totalHours, status, submitted_to, submittedTo } = req.body;
-    
-    console.log('📋 Creating timesheet:', { month, year, total_hours, totalHours, status, submitted_to, submittedTo });
+    const { month, year, status, submitted_to, submittedTo } = req.body;
+
+    console.log('📋 Creating timesheet:', { month, year, status, submitted_to, submittedTo });
 
     if (!month) {
       return res.status(400).json({ error: "Month is required" });
     }
 
-    const hours = total_hours || totalHours || 0;
     const managerId = submitted_to || submittedTo || null;
+    const organization = req.user.organization || 'Default Organization';
+
+    // Calculate total_hours from actual time_entries in the database
+    const hoursResult = await db.getOne(
+      "SELECT COALESCE(SUM(CAST(hours AS DECIMAL)), 0) as total_hours FROM time_entries WHERE user_id = $1 AND TO_CHAR(date, 'YYYY-MM') = $2 AND organization = $3",
+      [req.user.userId, month, organization]
+    );
+    const hours = parseFloat(hoursResult.total_hours) || 0;
+    console.log('📊 Calculated total_hours from time_entries:', hours);
 
     const result = await db.query(
       "INSERT INTO timesheets (user_id, month, year, total_hours, status, submitted_to, submitted_at, organization) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, $7) RETURNING *",
-      [req.user.userId, month, year || new Date().getFullYear(), hours, status || 'draft', managerId, req.user.organization || 'Default Organization']
+      [req.user.userId, month, year || new Date().getFullYear(), hours, status || 'draft', managerId, organization]
     );
 
     console.log('✅ Timesheet created:', result.rows[0]);
@@ -98,18 +106,49 @@ const createTimesheet = async (req, res) => {
   }
 };
 
-// UPDATE timesheet (approve/reject)
+// UPDATE timesheet (approve/reject/submit)
 const updateTimesheet = async (req, res) => {
   try {
-    const { status, approvedBy, rejectionReason } = req.body;
+    const { status, approvedBy, rejectionReason, submitted_to } = req.body;
 
     if (!status) {
       return res.status(400).json({ error: "Status is required" });
     }
 
+    const organization = req.user.organization || 'Default Organization';
+
+    // If submitting, recalculate total_hours from actual time_entries
+    let totalHoursUpdate = '';
+    const params = [status, approvedBy || null, rejectionReason || null, req.params.id, organization];
+
+    if (status === 'submitted') {
+      // Get the timesheet to find its month and user
+      const timesheet = await db.getOne(
+        "SELECT user_id, month FROM timesheets WHERE id = $1 AND organization = $2",
+        [req.params.id, organization]
+      );
+
+      if (timesheet) {
+        const hoursResult = await db.getOne(
+          "SELECT COALESCE(SUM(CAST(hours AS DECIMAL)), 0) as total_hours FROM time_entries WHERE user_id = $1 AND TO_CHAR(date, 'YYYY-MM') = $2 AND organization = $3",
+          [timesheet.user_id, timesheet.month, organization]
+        );
+        const hours = parseFloat(hoursResult.total_hours) || 0;
+        totalHoursUpdate = `, total_hours = $${params.length + 1}`;
+        params.push(hours);
+        console.log('📊 Recalculated total_hours on submit:', hours);
+      }
+
+      // Update submitted_to if provided
+      if (submitted_to) {
+        totalHoursUpdate += `, submitted_to = $${params.length + 1}`;
+        params.push(submitted_to);
+      }
+    }
+
     const result = await db.query(
-      "UPDATE timesheets SET status = $1, approved_by = $2, rejection_reason = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 AND organization = $5 RETURNING *",
-      [status, approvedBy || null, rejectionReason || null, req.params.id, req.user.organization || 'Default Organization']
+      `UPDATE timesheets SET status = $1, approved_by = $2, rejection_reason = $3${totalHoursUpdate}, updated_at = CURRENT_TIMESTAMP WHERE id = $4 AND organization = $5 RETURNING *`,
+      params
     );
 
     if (result.rows.length === 0) {

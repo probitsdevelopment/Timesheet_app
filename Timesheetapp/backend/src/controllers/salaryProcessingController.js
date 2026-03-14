@@ -12,12 +12,6 @@ const calculateWorkingDays = (year, month) => {
   return totalDays;
 };
 
-// Get number of paid leaves allowed (company policy)
-const getPaidLeavesAllowed = () => {
-  // This can be configured per company, for now return 2 per month
-  return 1;
-};
-
 // Process salary for an employee in a given month
 const processSalary = async (req, res) => {
   try {
@@ -56,7 +50,7 @@ const processSalary = async (req, res) => {
 
     // Step 3: Check timesheet approval
     const timesheetResult = await db.query(
-      `SELECT status FROM timesheets 
+      `SELECT status FROM timesheets
        WHERE user_id = $1 AND month = $2 AND organization = $3`,
       [userId, month, organization]
     );
@@ -65,11 +59,32 @@ const processSalary = async (req, res) => {
 
     console.log(`✅ Timesheet Approved: ${timesheetApproved}`);
 
-    // Step 4: Count approved leaves in the month
-    const leavesResult = await db.query(
-      `SELECT COUNT(*) as total_leaves, SUM(number_of_days) as total_days
+    // Step 4: Get allocated leaves for this user from leave_allocation (set by admin)
+    const allocationResult = await db.query(
+      `SELECT COALESCE(SUM(allocated_days), 0) as total_allocated
+       FROM leave_allocation
+       WHERE user_id = $1 AND year = $2 AND organization = $3`,
+      [userId, year, organization]
+    );
+    const totalAllocated = parseInt(allocationResult.rows[0]?.total_allocated || 0);
+
+    // Step 5: Count total approved leaves used in this year (up to and including this month)
+    const yearlyUsedResult = await db.query(
+      `SELECT COALESCE(SUM(number_of_days), 0) as used_days
        FROM leaves
-       WHERE user_id = $1 
+       WHERE user_id = $1
+       AND status = 'approved'
+       AND EXTRACT(YEAR FROM start_date) = $2
+       AND organization = $3`,
+      [userId, year, organization]
+    );
+    const totalUsedInYear = parseInt(yearlyUsedResult.rows[0]?.used_days || 0);
+
+    // Step 6: Count approved leaves in this specific month
+    const leavesResult = await db.query(
+      `SELECT COUNT(*) as total_leaves, COALESCE(SUM(number_of_days), 0) as total_days
+       FROM leaves
+       WHERE user_id = $1
        AND status = 'approved'
        AND DATE_TRUNC('month', start_date) = DATE_TRUNC('month', $2::date)
        AND organization = $3`,
@@ -79,24 +94,32 @@ const processSalary = async (req, res) => {
     const totalLeaves = parseInt(leavesResult.rows[0]?.total_leaves || 0);
     const totalLeaveDays = parseInt(leavesResult.rows[0]?.total_days || 0);
 
-    // Step 5: Calculate unpaid leaves
-    const paidLeavesAllowed = getPaidLeavesAllowed();
-    const unpaidLeaves = Math.max(0, totalLeaveDays - paidLeavesAllowed);
+    // Step 7: Calculate unpaid leaves based on allocation
+    // Leaves used before this month
+    const usedBeforeThisMonth = totalUsedInYear - totalLeaveDays;
+    // Remaining allocation before this month's leaves
+    const remainingAllocation = Math.max(0, totalAllocated - usedBeforeThisMonth);
+    // How many of this month's leaves are covered by allocation
+    const paidLeavesThisMonth = Math.min(totalLeaveDays, remainingAllocation);
+    // Leaves exceeding allocation = loss of pay
+    const unpaidLeaves = Math.max(0, totalLeaveDays - paidLeavesThisMonth);
     const deduction = unpaidLeaves * perDaySalary;
 
-    // Step 6: Calculate final salary
+    // Step 8: Calculate final salary
     const finalSalary = basicSalary - deduction;
 
-    // Step 7: Determine status
+    // Step 9: Determine status
     const status = timesheetApproved ? 'PROCESSED' : 'HOLD';
 
     console.log(`📊 Calculation:
       Basic Salary: ₹${basicSalary}
       Working Days: ${workingDays}
       Per Day: ₹${perDaySalary.toFixed(2)}
-      Approved Leaves: ${totalLeaveDays} days
-      Paid Leaves Allowed: ${paidLeavesAllowed} days
-      Unpaid Leaves: ${unpaidLeaves} days
+      Yearly Allocation: ${totalAllocated} days
+      Used in Year: ${totalUsedInYear} days
+      This Month Leaves: ${totalLeaveDays} days
+      Paid (from allocation): ${paidLeavesThisMonth} days
+      Unpaid (loss of pay): ${unpaidLeaves} days
       Deduction: ₹${deduction.toFixed(2)}
       Final Salary: ₹${finalSalary.toFixed(2)}
       Status: ${status}`);
@@ -143,7 +166,9 @@ const processSalary = async (req, res) => {
       basicSalary: parseFloat(processedSalary.basic_salary),
       workingDays: processedSalary.working_days,
       totalLeaves: processedSalary.total_leaves,
-      paidLeavesAllowed: paidLeavesAllowed,
+      yearlyAllocated: totalAllocated,
+      yearlyUsed: totalUsedInYear,
+      paidLeavesThisMonth: paidLeavesThisMonth,
       unpaidLeaves: processedSalary.unpaid_leaves,
       deduction: parseFloat(processedSalary.deduction),
       finalSalary: parseFloat(processedSalary.final_salary),
@@ -182,7 +207,7 @@ const getSalaryByUserAndMonth = async (req, res) => {
       basicSalary: parseFloat(salary.basic_salary),
       workingDays: salary.working_days,
       totalLeaves: salary.total_leaves,
-      paidLeavesAllowed: salary.paid_leaves_allowed || getPaidLeavesAllowed(),
+      paidLeavesAllowed: salary.paid_leaves_allowed || 0,
       unpaidLeaves: salary.unpaid_leaves,
       deduction: parseFloat(salary.deduction),
       finalSalary: parseFloat(salary.final_salary),

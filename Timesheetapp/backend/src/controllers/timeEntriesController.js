@@ -81,11 +81,12 @@ const createTimeEntry = async (req, res) => {
     console.log(`📝 Creating entry - Date received: ${date}, Type: ${typeof date}, Location: ${validLocation}`);
 
     const result = await db.query(
-      "INSERT INTO time_entries (user_id, project_id, date, task_start, task_end, hours, description, reason, status, work_location, organization) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *",
+      "INSERT INTO time_entries (user_id, project_id, date, task_start, task_end, hours, description, reason, status, work_location, organization) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id, user_id, project_id, TO_CHAR(date, 'YYYY-MM-DD') as date, task_start, task_end, CAST(hours AS DECIMAL) as hours, description, reason, status, work_location, created_at, organization",
       [req.user.userId, project_id, date, task_start || null, task_end || null, hours, description || "", reason || "Development", status || "pending", validLocation, req.user.organization]
     );
 
     const entry = result.rows[0];
+    entry.hours = parseFloat(entry.hours) || 0;
     console.log(`✅ Entry created - Date in DB: ${entry.date}, Location: ${entry.work_location}`);
 
     logSecurityEvent("TIME_ENTRY_CREATED", { entryId: entry.id, userId: req.user.userId, workLocation: validLocation });
@@ -108,7 +109,7 @@ const updateTimeEntry = async (req, res) => {
     }
 
     const result = await db.query(
-      "UPDATE time_entries SET project_id = $1, date = $2, task_start = $3, task_end = $4, hours = $5, description = $6, reason = $7, status = $8, work_location = $9, updated_at = CURRENT_TIMESTAMP WHERE id = $10 AND user_id = $11 AND organization = $12 RETURNING *",
+      "UPDATE time_entries SET project_id = $1, date = $2, task_start = $3, task_end = $4, hours = $5, description = $6, reason = $7, status = $8, work_location = $9, updated_at = CURRENT_TIMESTAMP WHERE id = $10 AND user_id = $11 AND organization = $12 RETURNING id, user_id, project_id, TO_CHAR(date, 'YYYY-MM-DD') as date, task_start, task_end, CAST(hours AS DECIMAL) as hours, description, reason, status, work_location, created_at, organization",
       [project_id, date, task_start || null, task_end || null, hours, description, reason, status, work_location || 'office', req.params.id, req.user.userId, req.user.organization]
     );
 

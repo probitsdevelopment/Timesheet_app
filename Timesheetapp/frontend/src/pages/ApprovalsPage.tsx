@@ -37,6 +37,7 @@ const ApprovalsPage = () => {
   const [timesheetEntries, setTimesheetEntries] = useState<any[]>([]);
   const [loadingEntries, setLoadingEntries] = useState(false);
   const [viewCurrentMonth, setViewCurrentMonth] = useState<string>('');
+  const [viewDayEntries, setViewDayEntries] = useState<{ date: string; entries: any[] } | null>(null);
   
   // Leave states
   const [pendingLeaves, setPendingLeaves] = useState<any[]>([]);
@@ -177,15 +178,9 @@ const ApprovalsPage = () => {
     }
   };
 
-  // Filter timesheets by status
+  // Only show pending timesheets — approved/rejected ones should not stay on this page
   const pendingTimesheets = timesheets.filter(
-    (ts) => ts.status === 'submitted' && ts.submitted_to === currentUser?.id
-  );
-  const approvedTimesheets = timesheets.filter(
-    (ts) => ts.status === 'approved' && ts.submitted_to === currentUser?.id
-  );
-  const rejectedTimesheets = timesheets.filter(
-    (ts) => ts.status === 'rejected' && ts.submitted_to === currentUser?.id
+    (ts) => ts.status === 'submitted' && String(ts.submitted_to) === String(currentUser?.id)
   );
 
   // Handle approve timesheet
@@ -329,33 +324,15 @@ const ApprovalsPage = () => {
         </TabsList>
 
         <TabsContent value="timesheets" className="space-y-4">
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="border-0 shadow-md">
-          <CardHeader className="pb-2">
-            <CardDescription>Pending</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{pendingTimesheets.length}</div>
-          </CardContent>
-        </Card>
-        <Card className="border-0 shadow-md">
-          <CardHeader className="pb-2">
-            <CardDescription>Approved</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{approvedTimesheets.length}</div>
-          </CardContent>
-        </Card>
-        <Card className="border-0 shadow-md">
-          <CardHeader className="pb-2">
-            <CardDescription>Rejected</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">{rejectedTimesheets.length}</div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Stats Card */}
+      <Card className="border-0 shadow-md">
+        <CardHeader className="pb-2">
+          <CardDescription>Pending Approvals</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold text-yellow-600">{pendingTimesheets.length}</div>
+        </CardContent>
+      </Card>
 
       {/* Pending Approvals */}
       <Card className="border-0 shadow-md">
@@ -443,80 +420,8 @@ const ApprovalsPage = () => {
         </CardContent>
       </Card>
 
-      {/* Approved Timesheets */}
-      {approvedTimesheets.length > 0 && (
-        <Card className="border-0 shadow-md">
-          <CardHeader>
-            <CardTitle>Approved Timesheets</CardTitle>
-            <CardDescription>Previously approved timesheets</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {approvedTimesheets.map((timesheet) => (
-                <div
-                  key={timesheet.id}
-                  className="flex items-center justify-between p-3 border rounded-lg bg-green-50"
-                >
-                  <div>
-                    <h4 className="font-semibold text-foreground">{(timesheet as any).user_name || 'Unknown User'}</h4>
-                    <div className="flex gap-4 text-sm text-muted-foreground mt-1">
-                      <span>
-                        {new Date(timesheet.month + '-01').toLocaleDateString('en-US', {
-                          month: 'long',
-                          year: 'numeric',
-                        })}
-                      </span>
-                      <span>{timesheet.total_hours}h</span>
-                      <span className="text-green-600">✓ Approved</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Rejected Timesheets */}
-      {rejectedTimesheets.length > 0 && (
-        <Card className="border-0 shadow-md">
-          <CardHeader>
-            <CardTitle>Rejected Timesheets</CardTitle>
-            <CardDescription>Timesheets that were rejected and need resubmission</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {rejectedTimesheets.map((timesheet) => (
-                <div
-                  key={timesheet.id}
-                  className="flex items-center justify-between p-3 border rounded-lg bg-red-50"
-                >
-                  <div>
-                    <h4 className="font-semibold text-foreground">{(timesheet as any).user_name || 'Unknown User'}</h4>
-                    <div className="flex gap-4 text-sm text-muted-foreground mt-1">
-                      <span>
-                        {new Date(timesheet.month + '-01').toLocaleDateString('en-US', {
-                          month: 'long',
-                          year: 'numeric',
-                        })}
-                      </span>
-                      <span>{timesheet.total_hours}h</span>
-                      <span className="text-red-600">✗ Rejected</span>
-                    </div>
-                    {timesheet.rejection_reason && (
-                      <p className="text-xs text-red-600 mt-1">
-                        Reason: {timesheet.rejection_reason}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
       {/* View Timesheet Calendar Modal */}
-      <Dialog open={viewTimesheetOpen} onOpenChange={setViewTimesheetOpen}>
+      <Dialog open={viewTimesheetOpen} onOpenChange={(open) => { setViewTimesheetOpen(open); if (!open) setViewDayEntries(null); }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
@@ -595,14 +500,19 @@ const ApprovalsPage = () => {
                     }
 
                     return (
-                      <div
+                      <button
                         key={day}
+                        onClick={() => {
+                          if (dayEntries.length > 0) {
+                            setViewDayEntries({ date: dateStr, entries: dayEntries });
+                          }
+                        }}
                         className={`aspect-square p-2 rounded-lg border-2 transition-colors flex flex-col items-center justify-center ${
                           dayEntries.length > 0
-                            ? 'border-blue-200 bg-blue-50'
+                            ? 'border-blue-200 bg-blue-50 hover:bg-blue-100 cursor-pointer'
                             : 'border-gray-200 bg-gray-50'
                         }`}
-                        title={`${dayEntries.length} entries`}
+                        title={dayEntries.length > 0 ? `Click to view ${dayEntries.length} entries` : ''}
                       >
                         <div className="font-semibold text-sm">{day}</div>
                         {dayHours > 0 && (
@@ -615,11 +525,55 @@ const ApprovalsPage = () => {
                             </div>
                           </div>
                         )}
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
               </div>
+
+              {/* Day Detail View */}
+              {viewDayEntries && (
+                <div className="border-t pt-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-semibold">
+                      Entries for {new Date(viewDayEntries.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                    </h4>
+                    <Button variant="ghost" size="sm" onClick={() => setViewDayEntries(null)}>
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <div className="space-y-3">
+                    {viewDayEntries.entries.map((entry: any, idx: number) => (
+                      <div key={entry.id || idx} className="p-3 border rounded-lg bg-white space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-muted-foreground" />
+                            <span className="font-medium text-sm">
+                              {entry.task_start || '—'} - {entry.task_end || '—'}
+                            </span>
+                          </div>
+                          <span className="text-sm font-bold text-blue-600">{parseFloat(entry.hours?.toString() || '0')}h</span>
+                        </div>
+                        <div className="text-sm">
+                          <span className="font-medium text-gray-700">Description: </span>
+                          <span className="text-gray-600">{entry.description || 'No description'}</span>
+                        </div>
+                        {entry.work_location && (
+                          <div className="text-xs">
+                            <span className={`px-2 py-1 rounded-full ${
+                              entry.work_location === 'office'
+                                ? 'bg-blue-100 text-blue-800'
+                                : 'bg-green-100 text-green-800'
+                            }`}>
+                              {entry.work_location === 'office' ? '🏢 Office' : '🏠 Work from Home'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Summary */}
               <div className="border-t pt-4">

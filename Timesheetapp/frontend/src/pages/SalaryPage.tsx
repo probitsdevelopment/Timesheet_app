@@ -470,21 +470,33 @@ const SalaryPage = () => {
                     </p>
                   </div>
 
-                  {/* Total Leaves */}
+                  {/* Yearly Allocation */}
                   <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">Total Leaves Taken</p>
+                    <p className="text-xs text-muted-foreground">Yearly Allocation</p>
+                    <p className="text-lg font-semibold">{processingResult.yearlyAllocated || 0} days</p>
+                  </div>
+
+                  {/* Yearly Used */}
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Used in Year</p>
+                    <p className="text-lg font-semibold">{processingResult.yearlyUsed || 0} days</p>
+                  </div>
+
+                  {/* This Month Leaves */}
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">This Month Leaves</p>
                     <p className="text-lg font-semibold">{processingResult.totalLeaves} days</p>
                   </div>
 
-                  {/* Paid Leaves */}
+                  {/* Paid from Allocation */}
                   <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">Paid Leaves</p>
-                    <p className="text-lg font-semibold text-green-600">{processingResult.paidLeavesAllowed} days</p>
+                    <p className="text-xs text-muted-foreground">Paid (from Allocation)</p>
+                    <p className="text-lg font-semibold text-green-600">{processingResult.paidLeavesThisMonth || 0} days</p>
                   </div>
 
-                  {/* Unpaid Leaves */}
+                  {/* Unpaid / Loss of Pay */}
                   <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">Unpaid Leaves (Loss of Pay)</p>
+                    <p className="text-xs text-muted-foreground">Loss of Pay</p>
                     <p className="text-lg font-semibold text-red-600">{processingResult.unpaidLeaves} days</p>
                   </div>
                 </div>

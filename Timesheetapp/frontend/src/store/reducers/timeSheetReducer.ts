@@ -46,30 +46,34 @@ const timesheetSlice = createSlice({
       state.timesheets.push(action.payload);
     },
     updateTimesheet: (state, action: PayloadAction<Timesheet>) => {
-      const index = state.timesheets.findIndex((ts) => ts.id === action.payload.id);
+      const index = state.timesheets.findIndex((ts) => String(ts.id) === String(action.payload.id));
       if (index !== -1) {
         state.timesheets[index] = action.payload;
       }
     },
     submitTimesheet: (state, action: PayloadAction<Timesheet>) => {
-      const index = state.timesheets.findIndex((ts) => ts.id === action.payload.id);
+      const index = state.timesheets.findIndex((ts) => String(ts.id) === String(action.payload.id));
       if (index !== -1) {
         state.timesheets[index] = {
           ...state.timesheets[index],
+          ...action.payload,
           status: 'submitted',
           submitted_at: new Date().toISOString(),
         };
+      } else {
+        // New timesheet — add it to the array
+        state.timesheets.push({ ...action.payload, status: 'submitted' });
       }
     },
     approveTimesheet: (state, action: PayloadAction<{ id: string; approvedBy: string }>) => {
-      const index = state.timesheets.findIndex((ts) => ts.id === action.payload.id);
+      const index = state.timesheets.findIndex((ts) => String(ts.id) === String(action.payload.id));
       if (index !== -1) {
         state.timesheets[index].status = 'approved';
         state.timesheets[index].approved_by = action.payload.approvedBy;
       }
     },
     rejectTimesheet: (state, action: PayloadAction<{ id: string; reason: string }>) => {
-      const index = state.timesheets.findIndex((ts) => ts.id === action.payload.id);
+      const index = state.timesheets.findIndex((ts) => String(ts.id) === String(action.payload.id));
       if (index !== -1) {
         state.timesheets[index].status = 'rejected';
         state.timesheets[index].rejection_reason = action.payload.reason;

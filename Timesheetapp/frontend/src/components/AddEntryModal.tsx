@@ -83,7 +83,12 @@ const AddEntryModal = () => {
     work_location: 'office',
   });
 
-  const [date, setDate] = useState(selectedDate || new Date().toISOString().split('T')[0]);
+  // Use local date (not UTC) to avoid timezone shift — toISOString() converts to UTC which can shift the day
+  const getLocalDateStr = () => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  };
+  const [date, setDate] = useState(selectedDate || getLocalDateStr());
 
   // Update date when selectedDate from Redux changes
   useEffect(() => {
@@ -209,19 +214,6 @@ const AddEntryModal = () => {
     try {
       // Save all entries
       for (const entry of tempFormEntries) {
-        const newEntry: TimeEntry = {
-          id: Date.now().toString() + Math.random(),
-          user_id: currentUser?.id || 'unknown',
-          project_id: entry.project_id,
-          date: date,
-          hours: entry.hours,
-          description: entry.description,
-          reason: `${entry.taskStart}-${entry.taskEnd}`,
-          status: 'pending',
-          created_at: new Date().toISOString(),
-          work_location: entry.work_location,
-        };
-
         const backendData = {
           project_id: parseInt(entry.project_id),
           date: date,
@@ -236,7 +228,25 @@ const AddEntryModal = () => {
 
         const response = await timesheetService.create(backendData);
         console.log('✅ Entry saved:', response);
-        dispatch(addEntry(newEntry));
+
+        // Use the backend response so we have real IDs and consistent data
+        // Always use the local `date` variable (from selectedDate) as the source of truth
+        // to avoid timezone shifts from PostgreSQL DATE → JS Date → UTC ISO string
+        const savedEntry: TimeEntry = {
+          id: response.id?.toString() || Date.now().toString(),
+          user_id: response.user_id?.toString() || currentUser?.id || 'unknown',
+          project_id: response.project_id?.toString() || entry.project_id,
+          date: date,
+          task_start: response.task_start || entry.taskStart,
+          task_end: response.task_end || entry.taskEnd,
+          hours: parseFloat(response.hours) || entry.hours,
+          description: response.description || entry.description,
+          reason: response.reason || 'Development',
+          status: response.status || 'pending',
+          created_at: response.created_at || new Date().toISOString(),
+          work_location: response.work_location || entry.work_location,
+        };
+        dispatch(addEntry(savedEntry));
       }
 
       toast({
@@ -276,7 +286,12 @@ const AddEntryModal = () => {
       const [endHour, endMin] = entry.taskEnd.split(':').map(Number);
       const startTotalMin = startHour * 60 + startMin;
       const endTotalMin = endHour * 60 + endMin;
-      return sum + (endTotalMin - startTotalMin);
+      let minutes = endTotalMin - startTotalMin;
+      // Handle overnight shift
+      if (minutes < 0) {
+        minutes += 24 * 60;
+      }
+      return sum + minutes;
     }, 0);
     const hours = totalMinutes / 60;
     return Math.round(hours * 100) / 100; // Round to 2 decimals

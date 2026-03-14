@@ -43,6 +43,7 @@ const TimeSheetsPage = () => {
   const [requestedDays, setRequestedDays] = useState<number>(0);
   const [isLossOfPayLeave, setIsLossOfPayLeave] = useState(false);
   const [locationFilter, setLocationFilter] = useState<'all' | 'office' | 'work_from_home'>('all');
+  const [viewEntriesDate, setViewEntriesDate] = useState<string | null>(null);
 
   // Get days in month
   const getDaysInMonth = (dateString: string) => {
@@ -124,11 +125,13 @@ const TimeSheetsPage = () => {
   const totalMonthHours = Math.round(monthEntries.reduce((sum, entry) => sum + parseFloat(entry.hours?.toString() || '0'), 0) * 100) / 100;
 
   // Check if timesheet for current month exists and its status
+  // Use loose comparison to handle number vs string mismatch from backend
   const currentTimesheet = timesheets.find(
-    (ts) => ts.month === currentMonth && ts.user_id === currentUser?.id
+    (ts) => ts.month === currentMonth && String(ts.user_id) === String(currentUser?.id)
   );
   const timesheetStatus = currentTimesheet?.status || 'draft';
-  const canSubmit = timesheetStatus === 'draft' && monthEntries.length > 0;
+  // Allow submit for draft timesheets and resubmit for rejected ones
+  const canSubmit = (timesheetStatus === 'draft' || timesheetStatus === 'rejected') && monthEntries.length > 0;
 
   // Use default leave type
   const DEFAULT_LEAVE_TYPE = 'Leave';
@@ -169,12 +172,11 @@ const TimeSheetsPage = () => {
       let timesheet = currentTimesheet;
 
       if (!timesheet) {
-        // Create new timesheet
+        // Create new timesheet — backend calculates total_hours from time_entries
         const newTimesheet: any = {
           user_id: currentUser.id,
           month: currentMonth,
           year: new Date(currentMonth).getFullYear(),
-          total_hours: totalMonthHours,
           status: 'submitted' as const,
           submitted_to: currentUser.managerid || null,
           organization: currentUser.organization,
@@ -182,16 +184,14 @@ const TimeSheetsPage = () => {
         const response = await timesheetSubmissionService.create(newTimesheet);
         dispatch(submitTimesheet(response));
       } else {
-        // Update existing timesheet
+        // Update existing timesheet — backend recalculates total_hours on submit
         const updatedTimesheet = {
-          ...timesheet,
-          total_hours: totalMonthHours,
           status: 'submitted' as const,
           submitted_at: new Date().toISOString(),
           submitted_to: currentUser.managerid || null,
         };
-        await timesheetSubmissionService.submit(String(timesheet.id), updatedTimesheet);
-        dispatch(submitTimesheet(updatedTimesheet));
+        const response = await timesheetSubmissionService.submit(String(timesheet.id), updatedTimesheet);
+        dispatch(submitTimesheet(response || { ...timesheet, ...updatedTimesheet }));
       }
 
       toast({
@@ -237,10 +237,14 @@ const TimeSheetsPage = () => {
           <Button
             onClick={handleSubmitTimesheet}
             disabled={!canSubmit || isSubmitting}
-            className="gap-2 bg-green-600 hover:bg-green-700"
+            className={`gap-2 ${timesheetStatus === 'submitted' ? 'bg-yellow-600 hover:bg-yellow-700' : timesheetStatus === 'approved' ? 'bg-blue-600' : timesheetStatus === 'rejected' ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`}
           >
             <Send className="w-4 h-4" />
-            {isSubmitting ? 'Submitting...' : 'Submit Timesheet'}
+            {isSubmitting ? 'Submitting...' :
+             timesheetStatus === 'submitted' ? 'Already Submitted' :
+             timesheetStatus === 'approved' ? 'Approved' :
+             timesheetStatus === 'rejected' ? 'Resubmit Timesheet' :
+             'Submit Timesheet'}
           </Button>
         </div>
       </div>
@@ -338,12 +342,18 @@ const TimeSheetsPage = () => {
                     onClick={() => {
                       // Don't allow adding entries on leave days
                       if (isLeaveTaken) return;
-                      
-                      const newSelected = isSelected ? null : dateStr;
-                      setSelectedDateLocal(newSelected);
-                      dispatch(setSelectedDate(newSelected));
-                      if (!isSelected) {
-                        dispatch(toggleAddEntryModal(true));
+
+                      if (dayEntries.length > 0) {
+                        // Show existing entries detail view
+                        setViewEntriesDate(dateStr);
+                      } else {
+                        // Open add entry modal for empty days
+                        const newSelected = isSelected ? null : dateStr;
+                        setSelectedDateLocal(newSelected);
+                        dispatch(setSelectedDate(newSelected));
+                        if (!isSelected) {
+                          dispatch(toggleAddEntryModal(true));
+                        }
                       }
                     }}
                     className={`aspect-square p-2 rounded-lg border-2 transition-colors flex flex-col items-center justify-center cursor-pointer ${
@@ -378,6 +388,75 @@ const TimeSheetsPage = () => {
       </Card>
 
       <AddEntryModal />
+
+      {/* View Day Entries Dialog */}
+      <Dialog open={!!viewEntriesDate} onOpenChange={(open) => { if (!open) setViewEntriesDate(null); }}>
+        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Entries for {viewEntriesDate && new Date(viewEntriesDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+            </DialogTitle>
+            <DialogDescription>
+              Time entries logged for this day
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            {viewEntriesDate && entries
+              .filter((e) => e.date === viewEntriesDate)
+              .map((entry, idx) => {
+                const project = undefined; // projects not in scope here, use project_id
+                return (
+                  <div key={entry.id || idx} className="p-4 border rounded-lg bg-gray-50 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-muted-foreground" />
+                        <span className="font-medium text-sm">
+                          {entry.task_start || '—'} - {entry.task_end || '—'}
+                        </span>
+                      </div>
+                      <span className="text-sm font-bold text-blue-600">{parseFloat(entry.hours?.toString() || '0')}h</span>
+                    </div>
+                    <div className="text-sm">
+                      <span className="font-medium text-gray-700">Description: </span>
+                      <span className="text-gray-600">{entry.description || 'No description'}</span>
+                    </div>
+                    {entry.work_location && (
+                      <div className="text-xs">
+                        <span className={`px-2 py-1 rounded-full ${
+                          entry.work_location === 'office'
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-green-100 text-green-800'
+                        }`}>
+                          {entry.work_location === 'office' ? '🏢 Office' : '🏠 Work from Home'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            {viewEntriesDate && entries.filter((e) => e.date === viewEntriesDate).length === 0 && (
+              <p className="text-center text-muted-foreground py-4">No entries for this day</p>
+            )}
+          </div>
+          <div className="flex gap-2 justify-end pt-2">
+            <Button variant="outline" onClick={() => setViewEntriesDate(null)}>
+              Close
+            </Button>
+            <Button
+              onClick={() => {
+                setViewEntriesDate(null);
+                setSelectedDateLocal(viewEntriesDate);
+                dispatch(setSelectedDate(viewEntriesDate));
+                dispatch(toggleAddEntryModal(true));
+              }}
+              className="gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Add More Entries
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Apply Leave Modal */}
       <Dialog open={showLeaveModal} onOpenChange={(open) => {
